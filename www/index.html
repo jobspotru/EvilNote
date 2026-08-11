@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Заметки</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; background: #f5f5f5; min-height: 100vh; padding-bottom: 80px; }
+  header { background: #2c3e50; color: #fff; padding: 14px 16px; display: flex; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,.15); position: sticky; top: 0; z-index: 5; }
+  header h1 { font-size: 18px; font-weight: 600; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin: 0 8px; }
+  .header-buttons { display: flex; gap: 8px; align-items: center; }
+  .add-btn { background: #fff; color: #2c3e50; border: none; border-radius: 50%; width: 36px; height: 36px; font-size: 22px; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,.2); display: flex; align-items: center; justify-content: center; }
+  .back-btn { background: rgba(255,255,255,0.2); color: #fff; border: none; border-radius: 50%; width: 38px; height: 38px; font-size: 20px; cursor: pointer; display: none; align-items: center; justify-content: center; flex-shrink: 0; line-height: 1; }
+  .back-btn:active { background: rgba(255,255,255,0.35); }
+  .edit-section-btn { background: rgba(255,255,255,0.15); color: #fff; border: none; border-radius: 50%; width: 36px; height: 36px; font-size: 16px; cursor: pointer; display: none; align-items: center; justify-content: center; flex-shrink: 0; }
+  .edit-section-btn:active { background: rgba(255,255,255,0.3); }
+  
+  #sectionsView { padding: 12px 16px; }
+  .section-item { background: #fff; border-radius: 8px; padding: 10px 14px; margin-bottom: 8px; display: flex; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,.06); border-left: 4px solid; }
+  .drag-handle { 
+    cursor: grab; 
+    padding: 8px 10px; 
+    color: #95a5a6; 
+    font-size: 20px; 
+    user-select: none; 
+    -webkit-user-select: none;
+    touch-action: none;
+    flex-shrink: 0;
+    margin-left: 4px;
+    margin-right: 4px;
+    line-height: 1;
+  }
+  .drag-handle:active { cursor: grabbing; color: #2c3e50; }
+  .section-item .name { font-size: 14px; font-weight: 700; color: #2c3e50; flex: 1; }
+  .section-item .count { background: rgba(0,0,0,0.08); color: #555; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; margin-right: 4px; min-width: 24px; text-align: center; }
+  .section-item .del-section { background: none; border: none; color: #bdc3c7; font-size: 16px; cursor: pointer; padding: 4px; }
+  .section-item .del-section:disabled { opacity: 0.3; cursor: not-allowed; }
+  .section-item.dragging { opacity: 0.3; }
+  #notesView { padding: 12px 16px; }
+  .note { border-radius: 8px; padding: 12px 14px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,.08); border-left: 3px solid; }
+  .note .drag-handle { 
+    cursor: grab; 
+    padding: 6px 8px; 
+    color: #95a5a6; 
+    font-size: 18px; 
+    user-select: none; 
+    -webkit-user-select: none;
+    touch-action: none;
+    flex-shrink: 0;
+    margin-left: auto;
+    line-height: 1;
+  }
+  .note .drag-handle:active { cursor: grabbing; color: #2c3e50; }
+  .note.dragging { opacity: 0.3; }
+  .note .icon { font-size: 18px; margin-right: 8px; flex-shrink: 0; }
+  .note .title { font-size: 14px; font-weight: 600; margin-bottom: 4px; color: #000; display: flex; align-items: center; }
+  .note .preview { font-size: 12px; color: #222; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.4; }
+  .note .footer { font-size: 10px; color: #555; margin-top: 6px; opacity: 0.7; }
+  
+  .drag-clone {
+    position: fixed;
+    z-index: 9999;
+    pointer-events: none;
+    box-shadow: 0 8px 24px rgba(0,0,0,.3);
+    border-radius: 8px;
+    transform: scale(1.05);
+    opacity: 0.95;
+  }
+  
+  .fullscreen-screen { display: none; position: fixed; inset: 0; background: #f5f5f5; z-index: 20; flex-direction: column; }
+  .fullscreen-screen.active { display: flex; }
+  .screen-header { background: #2c3e50; color: #fff; padding: 12px 10px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 8px rgba(0,0,0,.15); gap: 6px; }
+  .screen-header h2 { font-size: 16px; font-weight: 600; margin: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .screen-header .icon-btn { background: rgba(255,255,255,0.15); border: none; font-size: 16px; cursor: pointer; padding: 8px; border-radius: 8px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; color: #fff; }
+  .screen-header .icon-btn:active { background: rgba(255,255,255,0.3); }
+  .view-content { flex: 1; padding: 16px; overflow-y: auto; }
+  .view-title-display { font-size: 20px; font-weight: 700; color: #000; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #ddd; }
+  .view-text-display { font-size: 15px; line-height: 1.6; white-space: pre-wrap; word-wrap: break-word; color: #000; }
+  .view-text-display b, .view-text-display strong { font-weight: 700; }
+  .view-text-display i, .view-text-display em { font-style: italic; }
+  .view-text-display u { text-decoration: underline; }
+  .view-text-display s, .view-text-display strike, .view-text-display del { text-decoration: line-through; }
+  .view-text-display a, .view-text-display .phone { color: #2980b9; text-decoration: underline; cursor: pointer; font-weight: 600; }
+  .view-date { font-size: 11px; color: #777; margin-top: 20px; padding-top: 10px; border-top: 1px solid #eee; }
+  .edit-content { flex: 1; padding: 16px; overflow-y: auto; padding-bottom: 100px; }
+  .edit-content label { display: block; margin-bottom: 6px; font-size: 12px; font-weight: 600; color: #7f8c8d; text-transform: uppercase; letter-spacing: 0.5px; }
+  .edit-content input { width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 14px; margin-bottom: 12px; font-family: inherit; background: #fff; color: #000; }
+  .edit-content input:focus { outline: none; border-color: #2c3e50; }
+  .text-editor { width: 100%; min-height: 300px; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 14px; line-height: 1.6; font-family: inherit; background: #fff; color: #000; outline: none; overflow-y: auto; white-space: pre-wrap; word-wrap: break-word; margin-bottom: 12px; }
+  .text-editor:focus { border-color: #2c3e50; }
+  .text-editor b, .text-editor strong { font-weight: 700; }
+  .text-editor i, .text-editor em { font-style: italic; }
+  .text-editor u { text-decoration: underline; }
+  .text-editor s, .text-editor strike, .text-editor del { text-decoration: line-through; }
+  .text-editor:empty::before { content: attr(data-placeholder); color: #aaa; pointer-events: none; }
+  .format-toolbar { display: flex; gap: 6px; padding: 8px 10px; background: #fff; border: 1px solid #e0e0e0; border-radius: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+  .format-toolbar button { width: 44px; height: 38px; border: 1px solid #ddd; background: #fafafa; border-radius: 6px; cursor: pointer; font-size: 15px; font-weight: 700; display: flex; align-items: center; justify-content: center; color: #333; padding: 0; user-select: none; -webkit-user-select: none; }
+  .format-toolbar button:active { background: #e9ecef; }
+  .format-toolbar button.fmt-b { font-weight: 900; }
+  .format-toolbar button.fmt-i { font-style: italic; font-weight: 400; }
+  .format-toolbar button.fmt-u { text-decoration: underline; font-weight: 400; }
+  .format-toolbar button.fmt-s { text-decoration: line-through; font-weight: 400; }
+  .format-toolbar button.active { background: #2c3e50; color: #fff; border-color: #2c3e50; }
+  .colors { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+  .colors span { width: 32px; height: 32px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; }
+  .colors span.active { border-color: #2c3e50; }
+  .icon-palette { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+  .icon-palette span { 
+    width: 40px; height: 40px; 
+    border-radius: 10px; 
+    cursor: pointer; 
+    border: 2px solid #ddd;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    background: #fff;
+    transition: all 0.2s;
+  }
+  .icon-palette span:hover { transform: scale(1.1); }
+  .icon-palette span.active { 
+    border-color: #2c3e50; 
+    background: #ecf0f1;
+    box-shadow: 0 0 0 3px rgba(44, 62, 80, 0.2);
+    transform: scale(1.15);
+  }
+  .header-actions { display: flex; gap: 6px; }
+  .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); justify-content: center; align-items: center; z-index: 30; padding: 16px; }
+  .overlay.open { display: flex; }
+  .modal { background: #fff; border-radius: 12px; padding: 20px; width: 100%; max-width: 400px; max-height: 90vh; overflow-y: auto; animation: slideIn 0.2s; }
+  @keyframes slideIn { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+  .modal h2 { margin-bottom: 16px; font-size: 18px; color: #2c3e50; }
+  .modal label { display: block; margin-bottom: 6px; font-size: 12px; font-weight: 600; color: #7f8c8d; text-transform: uppercase; letter-spacing: 0.5px; }
+  .modal input { width: 100%; padding: 10px 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 14px; margin-bottom: 14px; font-family: inherit; background: #fafafa; }
+  .modal input:focus { outline: none; border-color: #2c3e50; background: #fff; }
+  .actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 10px; flex-wrap: wrap; }
+  .actions button { padding: 9px 18px; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; }
+  .btn-save { background: #2c3e50; color: #fff; }
+  .btn-cancel { background: #ecf0f1; color: #2c3e50; }
+  .btn-danger { background: #c0392b; color: #fff; }
+  #empty { text-align: center; color: #bdc3c7; margin-top: 40px; font-size: 14px; padding: 20px; }
+  .toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: #2c3e50; color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 13px; z-index: 100; opacity: 0; transition: opacity 0.3s; pointer-events: none; box-shadow: 0 4px 12px rgba(0,0,0,.15); }
+  .toast.show { opacity: 1; }
+  .toast.error { background: #c0392b; }
+</style>
+</head>
+<body>
+
+<header>
+  <button class="back-btn" id="backBtn" onclick="showSections()">‹</button>
+  <h1 id="headerTitle">📝 Заметки</h1>
+  <div class="header-buttons">
+    <button class="edit-section-btn" id="editSectionBtn" title="Редактировать раздел">✏️</button>
+    <button class="add-btn" id="addBtn" onclick="onAddClick()">+</button>
+  </div>
+</header>
+
+<div id="sectionsView"></div>
+<div id="notesView"></div>
+<p id="empty" style="display:none;">Нет заметок</p>
+
+<div class="fullscreen-screen" id="viewScreen">
+  <div class="screen-header">
+    <button class="icon-btn" id="viewBackBtn">‹</button>
+    <h2 id="viewHeaderTitle">Заметка</h2>
+    <div class="header-actions">
+      <button class="icon-btn" id="viewCopyBtn" title="Копировать текст">📋</button>
+      <button class="icon-btn" id="viewEditBtn" title="Редактировать">✏️</button>
+      <button class="icon-btn" id="viewDeleteBtn" title="Удалить">🗑️</button>
+    </div>
+  </div>
+  <div class="view-content">
+    <div class="view-title-display" id="viewTitleDisplay"></div>
+    <div class="view-text-display" id="viewTextDisplay"></div>
+    <div class="view-date" id="viewDateDisplay"></div>
+  </div>
+</div>
+
+<div class="fullscreen-screen" id="editScreen">
+  <div class="screen-header">
+    <button class="icon-btn" onclick="closeEditScreen()">✕</button>
+    <h2 id="editScreenTitle">Новая заметка</h2>
+    <button class="icon-btn" onclick="saveNoteFromScreen()" style="background:#27ae60;">✓</button>
+  </div>
+  <div class="edit-content">
+    <label>Заголовок</label>
+    <input type="text" id="editTitle" placeholder="Заголовок заметки">
+    <label>Текст</label>
+    <div class="text-editor" id="editText" contenteditable="true" data-placeholder="Текст заметки..."></div>
+    <div class="format-toolbar" id="formatToolbar">
+      <button class="fmt-b" data-cmd="bold">B</button>
+      <button class="fmt-i" data-cmd="italic">I</button>
+      <button class="fmt-u" data-cmd="underline">U</button>
+      <button class="fmt-s" data-cmd="strikeThrough">S</button>
+    </div>
+    <label>Иконка</label>
+    <div class="icon-palette" id="iconPalette"></div>
+    <label>Цвет</label>
+    <div class="colors" id="editPalette"></div>
+  </div>
+</div>
+
+<div class="overlay" id="sectionOverlay">
+  <div class="modal">
+    <h2 id="sectionModalTitle">Новый раздел</h2>
+    <label>Название</label>
+    <input type="text" id="sectionName" placeholder="Название раздела">
+    <label>Цвет</label>
+    <div class="colors" id="sectionPalette"></div>
+    <div class="actions">
+      <button class="btn-cancel" onclick="closeSectionModal()">Отмена</button>
+      <button class="btn-save" id="sectionSaveBtn" onclick="onSectionSave()">Создать</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="confirmOverlay">
+  <div class="modal">
+    <h2 id="confirmTitle">Подтверждение</h2>
+    <p id="confirmText" style="margin-bottom:20px; font-size:14px; color:#555;"></p>
+    <div class="actions">
+      <button class="btn-cancel" onclick="closeConfirm()">Отмена</button>
+      <button class="btn-danger" id="confirmBtn">Удалить</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== Локальное хранилище (localStorage) =====
+const STORAGE_SECTIONS = 'notes_app_sections';
+const STORAGE_NOTES = 'notes_app_notes';
+
+const COLORS = ['#4169e1', '#7851a9', '#ca0147', '#3eb489', '#900020', '#ffd700', '#21421e', '#e97451'];
+const ICONS = ['⭐', '🔥', '', '✅', '❌', '', '🎯', '📚', '⏰', '❤️', '', '👉', '👍', '🦇', '🍀', ''];
+
+let currentSection = null;
+let editingIndex = -1;
+let viewingIndex = -1;
+let selectedColor = COLORS[0];
+let selectedSectionColor = COLORS[0];
+let selectedIcon = '';
+let confirmCallback = null;
+let sectionsCache = [];
+let notesCache = [];
+let editingSectionId = null;
+
+function generateId() {
+  return Date.now().toString(36) + Math.random().toString(36).substring(2, 10);
+}
+
+function persistSections() {
+  try { localStorage.setItem(STORAGE_SECTIONS, JSON.stringify(sectionsCache)); }
+  catch(e) { showToast('Ошибка сохранения', true); }
+}
+function persistNotes() {
+  try { localStorage.setItem(STORAGE_NOTES, JSON.stringify(notesCache)); }
+  catch(e) { showToast('Ошибка сохранения', true); }
+}
+function readSections() {
+  try { const d = localStorage.getItem(STORAGE_SECTIONS); return d ? JSON.parse(d) : []; }
+  catch(e) { return []; }
+}
+function readNotes() {
+  try { const d = localStorage.getItem(STORAGE_NOTES); return d ? JSON.parse(d) : []; }
+  catch(e) { return []; }
+}
+
+function loadSections() {
+  const list = readSections();
+  list.sort((a, b) => (a.position || 0) - (b.position || 0));
+  return list;
+}
+function loadNotes() {
+  const list = readNotes();
+  list.sort((a, b) => (a.position || 0) - (b.position || 0));
+  return list;
+}
+
+function insertSection(name, color) {
+  const maxPos = sectionsCache.length > 0 ? Math.max(...sectionsCache.map(s => s.position || 0)) : 0;
+  const section = {
+    id: generateId(),
+    name,
+    color,
+    position: maxPos + 1,
+    created_at: new Date().toISOString()
+  };
+  sectionsCache.push(section);
+  persistSections();
+  return section;
+}
+function updateSection(id, name, color) {
+  const idx = sectionsCache.findIndex(s => s.id === id);
+  if (idx < 0) return null;
+  sectionsCache[idx] = { ...sectionsCache[idx], name, color };
+  persistSections();
+  return sectionsCache[idx];
+}
+function updateSectionPosition(id, position) {
+  const s = sectionsCache.find(x => x.id === id);
+  if (s) { s.position = position; persistSections(); }
+  return true;
+}
+function deleteSection(id) {
+  sectionsCache = sectionsCache.filter(s => s.id !== id);
+  persistSections();
+  return true;
+}
+
+function insertNote(title, text, sid, color, icon) {
+  const sectionNotes = notesCache.filter(n => n.section_id === sid);
+  const maxPos = sectionNotes.length > 0 ? Math.max(...sectionNotes.map(n => n.position || 0)) : 0;
+  const now = new Date().toISOString();
+  const note = {
+    id: generateId(),
+    title,
+    text,
+    section_id: sid,
+    color,
+    icon,
+    position: maxPos + 1,
+    created_at: now,
+    updated_at: now
+  };
+  notesCache.unshift(note);
+  persistNotes();
+  return note;
+}
+function updateNote(id, title, text, color, icon) {
+  const idx = notesCache.findIndex(n => n.id === id);
+  if (idx < 0) return null;
+  notesCache[idx] = { ...notesCache[idx], title, text, color, icon, updated_at: new Date().toISOString() };
+  persistNotes();
+  return notesCache[idx];
+}
+function updateNotePosition(id, position) {
+  const n = notesCache.find(x => x.id === id);
+  if (n) { n.position = position; persistNotes(); }
+  return true;
+}
+function deleteNote(id) {
+  notesCache = notesCache.filter(n => n.id !== id);
+  persistNotes();
+  return true;
+}
+// ===== Конец блока локального хранилища =====
+
+function showToast(msg, err) { const t = document.getElementById('toast'); t.textContent = msg; t.className = 'toast show' + (err ? ' error' : ''); setTimeout(() => t.className = 'toast', 2500); }
+function lightenColor(hex, percent = 80) { hex = hex.replace('#', ''); const r = parseInt(hex.substring(0, 2), 16); const g = parseInt(hex.substring(2, 4), 16); const b = parseInt(hex.substring(4, 6), 16); const f = percent / 100; return '#' + Math.round(r + (255-r)*f).toString(16).padStart(2,'0') + Math.round(g + (255-g)*f).toString(16).padStart(2,'0') + Math.round(b + (255-b)*f).toString(16).padStart(2,'0'); }
+function escapeHtml(t) { const d = document.createElement('div'); d.textContent = t||''; return d.innerHTML; }
+function stripHtml(h) { if (!h) return ''; const t = document.createElement('div'); t.innerHTML = h; return t.textContent||t.innerText||''; }
+function formatDate(n) { if (!n) return ''; const d = new Date(n.updated_at || n.created_at); return d.toLocaleDateString('ru-RU'); }
+
+function init() {
+  renderEditPalette();
+  renderSectionPalette();
+  renderIconPalette();
+  bindViewButtons();
+  bindFormatToolbar();
+  showSections();
+}
+
+function bindViewButtons() { document.getElementById('viewBackBtn').onclick = ()=>closeViewScreen(); document.getElementById('viewEditBtn').onclick = ()=>editFromView(); document.getElementById('viewDeleteBtn').onclick = ()=>askDeleteFromView(); document.getElementById('viewCopyBtn').onclick = ()=>copyNoteContent(); document.getElementById('editSectionBtn').onclick = ()=>openEditSectionModal(); }
+function bindFormatToolbar() { const ed = document.getElementById('editText'); document.querySelectorAll('#formatToolbar button').forEach(b=>{ b.addEventListener('mousedown',e=>e.preventDefault()); b.addEventListener('click',e=>{e.preventDefault();document.execCommand(b.dataset.cmd,false,null);ed.focus();updateToolbarState();}); }); ['keyup','mouseup','touchend','click','focus','input'].forEach(e=>ed.addEventListener(e,()=>setTimeout(updateToolbarState,10))); }
+function updateToolbarState() { ['bold','italic','underline','strikeThrough'].forEach(c=>{ const b=document.querySelector(`#formatToolbar button[data-cmd="${c}"]`); if(b) try{b.classList.toggle('active',document.queryCommandState(c));}catch(e){} }); }
+
+function renderEditPalette() { const p=document.getElementById('editPalette'); if(!p)return; p.innerHTML=''; COLORS.forEach(c=>{const s=document.createElement('span');s.style.background=c;if(c===selectedColor)s.classList.add('active');s.onclick=()=>{selectedColor=c;renderEditPalette();};p.appendChild(s);}); }
+function renderSectionPalette() { const p=document.getElementById('sectionPalette'); if(!p)return; p.innerHTML=''; COLORS.forEach(c=>{const s=document.createElement('span');s.style.background=c;if(c===selectedSectionColor)s.classList.add('active');s.onclick=()=>{selectedSectionColor=c;renderSectionPalette();};p.appendChild(s);}); }
+
+function renderIconPalette() {
+  const p = document.getElementById('iconPalette');
+  if (!p) return;
+  p.innerHTML = '';
+  const none = document.createElement('span');
+  none.textContent = '✕';
+  none.title = 'Без иконки';
+  none.style.color = '#999';
+  none.style.fontSize = '16px';
+  if (selectedIcon === '') none.classList.add('active');
+  none.onclick = () => { selectedIcon = ''; renderIconPalette(); };
+  p.appendChild(none);
+  ICONS.forEach(icon => {
+    if (!icon) return;
+    const s = document.createElement('span');
+    s.textContent = icon;
+    s.title = icon;
+    if (icon === selectedIcon) s.classList.add('active');
+    s.onclick = () => { selectedIcon = icon; renderIconPalette(); };
+    p.appendChild(s);
+  });
+}
+
+function showSections() { 
+  currentSection=null; 
+  editingSectionId=null; 
+  document.getElementById('sectionsView').style.display='block'; 
+  document.getElementById('notesView').style.display='none'; 
+  document.getElementById('empty').style.display='none'; 
+  document.getElementById('backBtn').style.display='none'; 
+  document.getElementById('editSectionBtn').style.display='none'; 
+  document.getElementById('headerTitle').textContent='📝 Заметки'; 
+  document.getElementById('addBtn').onclick=()=>openSectionModal(); 
+  sectionsCache=loadSections(); 
+  notesCache=loadNotes(); 
+  renderSections(); 
+  setupDragDrop('sectionsView', '.section-item', 'section');
+}
+function showNotes(name,id) { 
+  currentSection={name,id}; 
+  document.getElementById('sectionsView').style.display='none'; 
+  document.getElementById('notesView').style.display='block'; 
+  document.getElementById('backBtn').style.display='flex'; 
+  document.getElementById('editSectionBtn').style.display='flex'; 
+  document.getElementById('headerTitle').textContent=name; 
+  document.getElementById('addBtn').onclick=()=>openEditScreen(); 
+  renderNotes(); 
+  setupDragDrop('notesView', '.note', 'note');
+}
+function onAddClick(){}
+
+function openSectionModal() { editingSectionId = null; document.getElementById('sectionModalTitle').textContent = 'Новый раздел'; document.getElementById('sectionSaveBtn').textContent = 'Создать'; document.getElementById('sectionName').value=''; selectedSectionColor=COLORS[0]; renderSectionPalette(); document.getElementById('sectionOverlay').classList.add('open'); }
+function openEditSectionModal() { if (!currentSection) return; editingSectionId = currentSection.id; document.getElementById('sectionModalTitle').textContent = 'Редактировать раздел'; document.getElementById('sectionSaveBtn').textContent = 'Сохранить'; document.getElementById('sectionName').value = currentSection.name; const section = sectionsCache.find(s => s.id === currentSection.id); selectedSectionColor = section ? section.color : COLORS[0]; renderSectionPalette(); document.getElementById('sectionOverlay').classList.add('open'); }
+function onSectionSave() { const name = document.getElementById('sectionName').value.trim(); if (!name) { showToast('Введите название'); return; } const duplicate = sectionsCache.some(s => s.name === name && s.id !== editingSectionId); if (duplicate) { showToast('Раздел с таким именем уже существует'); return; } if (editingSectionId) { const updated = updateSection(editingSectionId, name, selectedSectionColor); if (updated) { const idx = sectionsCache.findIndex(s => s.id === editingSectionId); if (idx >= 0) sectionsCache[idx] = updated; currentSection = { name: updated.name, id: updated.id }; document.getElementById('headerTitle').textContent = updated.name; renderSections(); renderNotes(); closeSectionModal(); showToast('✓ Раздел обновлён'); } } else { const ns = insertSection(name, selectedSectionColor); if (ns) { renderSections(); closeSectionModal(); } } }
+function closeSectionModal(){ document.getElementById('sectionOverlay').classList.remove('open'); editingSectionId = null; }
+
+function setupDragDrop(containerId, itemSelector, type) {
+  const container = document.getElementById(containerId);
+  if (container._dragCleanup) container._dragCleanup();
+  
+  let clone = null;
+  let draggedItem = null;
+  let placeholder = null;
+  let offsetX = 0;
+  let offsetY = 0;
+  let isDragging = false;
+  let startX = 0;
+  let startY = 0;
+  let hasMoved = false;
+
+  function getItems() {
+    return Array.from(container.querySelectorAll(itemSelector));
+  }
+
+  function onTouchStart(e) {
+    const handle = e.target.closest('.drag-handle');
+    if (!handle) return;
+    
+    draggedItem = handle.closest(itemSelector);
+    if (!draggedItem) return;
+    
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+    hasMoved = false;
+  }
+
+  function onTouchMove(e) {
+    if (!draggedItem) return;
+    
+    const x = e.touches[0].clientX;
+    const y = e.touches[0].clientY;
+    const dx = x - startX;
+    const dy = y - startY;
+    
+    if (!isDragging && (Math.abs(dx) > 8 || Math.abs(dy) > 8)) {
+      isDragging = true;
+      hasMoved = true;
+      startDrag(x, y);
+    }
+    
+    if (!isDragging) return;
+    e.preventDefault();
+    moveDrag(x, y);
+  }
+
+  function onTouchEnd(e) {
+    if (isDragging) endDrag();
+    draggedItem = null;
+    isDragging = false;
+    hasMoved = false;
+  }
+
+  function startDrag(x, y) {
+    if (!draggedItem) return;
+    if (navigator.vibrate) navigator.vibrate(30);
+    
+    const rect = draggedItem.getBoundingClientRect();
+    offsetX = x - rect.left;
+    offsetY = y - rect.top;
+    
+    clone = draggedItem.cloneNode(true);
+    clone.classList.add('drag-clone');
+    clone.style.width = rect.width + 'px';
+    clone.style.left = rect.left + 'px';
+    clone.style.top = rect.top + 'px';
+    document.body.appendChild(clone);
+    
+    draggedItem.classList.add('dragging');
+    
+    placeholder = document.createElement('div');
+    placeholder.style.height = rect.height + 'px';
+    placeholder.style.marginBottom = '8px';
+    placeholder.style.borderRadius = '8px';
+    placeholder.style.background = 'rgba(0,0,0,0.05)';
+    placeholder.style.border = '2px dashed #bdc3c7';
+    
+    draggedItem.parentNode.insertBefore(placeholder, draggedItem);
+    draggedItem.style.display = 'none';
+  }
+
+  function moveDrag(x, y) {
+    if (!clone) return;
+    
+    clone.style.left = (x - offsetX) + 'px';
+    clone.style.top = (y - offsetY) + 'px';
+    
+    clone.style.display = 'none';
+    const elemBelow = document.elementFromPoint(x, y);
+    clone.style.display = '';
+    
+    if (!elemBelow) return;
+    
+    const itemBelow = elemBelow.closest(itemSelector);
+    if (!itemBelow || itemBelow === draggedItem || itemBelow === placeholder) return;
+    
+    const items = getItems();
+    const draggedIdx = items.indexOf(draggedItem);
+    const belowIdx = items.indexOf(itemBelow);
+    
+    if (draggedIdx < belowIdx) {
+      placeholder.parentNode.insertBefore(placeholder, itemBelow.nextSibling);
+    } else {
+      placeholder.parentNode.insertBefore(placeholder, itemBelow);
+    }
+  }
+
+  function endDrag() {
+    if (clone) { clone.remove(); clone = null; }
+    
+    if (draggedItem && placeholder) {
+      draggedItem.style.display = '';
+      draggedItem.classList.remove('dragging');
+      placeholder.parentNode.insertBefore(draggedItem, placeholder);
+      placeholder.remove();
+    }
+    
+    placeholder = null;
+    if (hasMoved) saveOrder(type);
+  }
+
+  function saveOrder(type) {
+    const items = getItems();
+    const newOrder = [];
+    items.forEach((item, idx) => {
+      newOrder.push({ id: item.dataset.id, position: idx + 1 });
+    });
+    
+    if (type === 'section') {
+      newOrder.forEach(({id, position}) => {
+        const s = sectionsCache.find(x => x.id === id);
+        if (s) s.position = position;
+      });
+      newOrder.forEach(({id, position}) => updateSectionPosition(id, position));
+    } else {
+      newOrder.forEach(({id, position}) => {
+        const n = notesCache.find(x => x.id === id);
+        if (n) n.position = position;
+      });
+      newOrder.forEach(({id, position}) => updateNotePosition(id, position));
+    }
+    
+    showToast('✓ Порядок сохранён');
+  }
+
+  container.addEventListener('touchstart', onTouchStart, { passive: true });
+  container.addEventListener('touchmove', onTouchMove, { passive: false });
+  container.addEventListener('touchend', onTouchEnd);
+  container.addEventListener('touchcancel', onTouchEnd);
+  
+  container._dragCleanup = function() {
+    container.removeEventListener('touchstart', onTouchStart);
+    container.removeEventListener('touchmove', onTouchMove);
+    container.removeEventListener('touchend', onTouchEnd);
+    container.removeEventListener('touchcancel', onTouchEnd);
+  };
+}
+
+function renderSections() { 
+  const c=document.getElementById('sectionsView'); 
+  c.innerHTML=''; 
+  if(sectionsCache.length===0){c.innerHTML='<p style="text-align:center;color:#bdc3c7;margin-top:40px;font-size:14px;">Нет разделов. Нажмите + чтобы создать первый!</p>';return;} 
+  sectionsCache.forEach(s=>{ 
+    const cnt=notesCache.filter(n=>n.section_id===s.id).length; 
+    const d=document.createElement('div'); 
+    d.className='section-item'; 
+    d.dataset.id = s.id;
+    d.style.borderLeftColor=s.color; 
+    d.style.background=lightenColor(s.color, 80); 
+    d.innerHTML=`<span class="name">${escapeHtml(s.name)}</span><span class="count">${cnt}</span><span class="drag-handle">⠿</span><button class="del-section" data-id="${s.id}" ${cnt>0?'disabled':''}></button>`; 
+    d.addEventListener('click', e=>{
+      if (e.target.classList.contains('del-section') || e.target.classList.contains('drag-handle')) return;
+      showNotes(s.name, s.id);
+    });
+    c.appendChild(d); 
+  }); 
+  c.querySelectorAll('.del-section').forEach(b=>{ 
+    b.addEventListener('click', e=>{ 
+      e.stopPropagation(); 
+      const id=b.dataset.id; 
+      const name=b.closest('.section-item').querySelector('.name').textContent; 
+      if(notesCache.filter(n=>n.section_id===id).length>0){showToast('Сначала удалите заметки');return;} 
+      showConfirm('Удалить раздел?',`Раздел "${name}" будет удалён.`,()=>{ if(deleteSection(id)){ renderSections(); } }); 
+    }); 
+  }); 
+}
+
+function renderNotes() { 
+  const l=document.getElementById('notesView'), e=document.getElementById('empty'); 
+  l.innerHTML=''; 
+  const f=notesCache.filter(n=>n.section_id===currentSection.id);
+  e.style.display=f.length?'none':'block';
+  f.forEach((n,i)=>{ 
+    const d=document.createElement('div'); 
+    d.className='note';
+    d.dataset.id = n.id;
+    d.style.borderLeftColor=n.color; 
+    d.style.background=lightenColor(n.color, 80);
+    const iconHtml = n.icon ? `<span class="icon">${n.icon}</span>` : '';
+    const t=n.title||'Без заголовка', p=stripHtml(n.text);
+    d.innerHTML=`<div class="title">${iconHtml}${escapeHtml(t)}<span class="drag-handle">⠿</span></div><div class="preview">${escapeHtml(p.substring(0,80)+(p.length>80?'...':''))}</div><div class="footer">${formatDate(n)}</div>`;
+    d.addEventListener('click', (ev)=>{
+      if (ev.target.classList.contains('drag-handle')) return;
+      viewNote(i,f);
+    }); 
+    l.appendChild(d); 
+  }); 
+}
+
+function processFormattedText(h) { 
+  let r=/<[a-z][\s\S]*>/i.test(h)?h:escapeHtml(h); 
+  r=r.replace(/(https?:\/\/[^\s<"]+)/g,'<a href="javascript:void(0)" class="link" data-url="$1">$1</a>'); 
+  r=r.replace(/(\+79\d{10})/g,'<span class="phone" data-phone="$1">$1</span>'); 
+  return r; 
+}
+
+function copyToClipboard(t,l) { const ta=document.createElement('textarea'); ta.value=t; ta.style.cssText='position:fixed;left:-9999px;'; ta.setAttribute('readonly',''); document.body.appendChild(ta); ta.focus(); ta.select(); ta.setSelectionRange(0,t.length); try{document.execCommand('copy')?showToast('✓ Скопировано'+(l?': '+l:'')):showToast('Ошибка копирования',true);}catch(e){showToast('Ошибка',true);} document.body.removeChild(ta); }
+function copyNoteContent() { if(viewingIndex<0)return; const n=notesCache.filter(x=>x.section_id===currentSection.id)[viewingIndex]; copyToClipboard(stripHtml(n.text), 'текст заметки'); }
+function showConfirm(t,txt,cb) { document.getElementById('confirmTitle').textContent=t; document.getElementById('confirmText').textContent=txt; confirmCallback=cb; document.getElementById('confirmOverlay').classList.add('open'); document.getElementById('confirmBtn').onclick=()=>{if(confirmCallback)confirmCallback();closeConfirm();}; }
+function closeConfirm(){document.getElementById('confirmOverlay').classList.remove('open');confirmCallback=null;}
+function askDeleteFromView() { showConfirm('Удалить заметку?','Это действие нельзя отменить.',()=>{ if(viewingIndex<0)return; const n=notesCache.filter(x=>x.section_id===currentSection.id)[viewingIndex]; if(deleteNote(n.id)){closeViewScreen();renderNotes();} }); }
+function openEditScreen() { editingIndex=-1; document.getElementById('editScreenTitle').textContent='Новая заметка'; document.getElementById('editTitle').value=''; document.getElementById('editText').innerHTML=''; selectedColor=COLORS[0]; selectedIcon=''; renderEditPalette(); renderIconPalette(); document.getElementById('editScreen').classList.add('active'); setTimeout(()=>document.querySelectorAll('#formatToolbar button').forEach(b=>b.classList.remove('active')),100); }
+function editFromView() { if(viewingIndex<0)return; const n=notesCache.filter(x=>x.section_id===currentSection.id)[viewingIndex]; editingIndex=viewingIndex; closeViewScreen(); document.getElementById('editScreenTitle').textContent='Редактировать'; document.getElementById('editTitle').value=n.title||''; document.getElementById('editText').innerHTML=n.text||''; selectedColor=n.color; selectedIcon=n.icon||''; renderEditPalette(); renderIconPalette(); document.getElementById('editScreen').classList.add('active'); setTimeout(updateToolbarState,150); }
+function closeEditScreen(){document.getElementById('editScreen').classList.remove('active');}
+
+function saveNoteFromScreen() { const t=document.getElementById('editTitle').value.trim(), h=document.getElementById('editText').innerHTML.trim(); if(!stripHtml(h).trim()){showToast('Введите текст');return;} if(!currentSection){showToast('Выберите раздел');return;} const f=notesCache.filter(n=>n.section_id===currentSection.id); if(editingIndex>=0){ const n=f[editingIndex]; const updated = updateNote(n.id,t,h,selectedColor,selectedIcon); if(updated){ const idx = notesCache.findIndex(x=>x.id===n.id); if(idx>=0) notesCache[idx] = updated; renderNotes(); } } else { const nn=insertNote(t,h,currentSection.id,selectedColor,selectedIcon); if(nn){renderNotes();} } closeEditScreen(); }
+
+function viewNote(i,f) { 
+  viewingIndex=i; 
+  const n=f[i]; 
+  const iconHtml = n.icon ? n.icon + ' ' : '';
+  document.getElementById('viewHeaderTitle').textContent = iconHtml + (n.title||'Заметка');
+  document.getElementById('viewTitleDisplay').textContent = iconHtml + (n.title||'');
+  document.getElementById('viewTitleDisplay').style.display=n.title?'block':'none';
+  document.getElementById('viewTextDisplay').innerHTML=processFormattedText(n.text); 
+  document.getElementById('viewDateDisplay').textContent=formatDate(n); 
+  document.getElementById('viewScreen').classList.add('active'); 
+  setTimeout(()=>{ 
+    document.querySelectorAll('#viewTextDisplay .link').forEach(el=>{el.onclick=e=>{e.preventDefault();e.stopPropagation();copyToClipboard(el.dataset.url);};}); 
+    document.querySelectorAll('#viewTextDisplay .phone').forEach(el=>{el.onclick=e=>{e.preventDefault();e.stopPropagation();copyToClipboard(el.dataset.phone);};}); 
+  },50); 
+}
+
+function closeViewScreen(){document.getElementById('viewScreen').classList.remove('active');viewingIndex=-1;}
+
+document.querySelectorAll('.overlay').forEach(o=>{o.onclick=e=>{if(e.target===o)o.classList.remove('open');};});
+
+init();
+</script>
+</body>
+</html>
