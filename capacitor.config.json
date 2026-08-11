@@ -1,0 +1,8 @@
+{
+  "appId": "com.evilnote.app",
+  "appName": "EvilNote",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  }
+}
