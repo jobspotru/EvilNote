@@ -228,12 +228,88 @@
 <div class="toast" id="toast"></div>
 
 <script>
-// ===== Локальное хранилище (localStorage) =====
-const STORAGE_SECTIONS = 'notes_app_sections';
-const STORAGE_NOTES = 'notes_app_notes';
+// ============================================================
+//  МОДУЛЬ ХРАНЕНИЯ ДАННЫХ В ФАЙЛЕ
+//  Использует Capacitor Filesystem (для APK)
+//  или localStorage как fallback (для тестирования в браузере)
+// ============================================================
+const Storage = {
+  fileName: 'notes_data.json',
+  isNative: false,
+  Filesystem: null,
+  saveTimeout: null,
+
+  async init() {
+    if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Filesystem) {
+      this.isNative = true;
+      this.Filesystem = window.Capacitor.Plugins.Filesystem;
+      console.log('[Storage] Режим: Capacitor Filesystem (файл на устройстве)');
+    } else {
+      this.isNative = false;
+      console.log('[Storage] Режим: localStorage (браузер)');
+    }
+  },
+
+  async load() {
+    if (this.isNative) {
+      try {
+        const result = await this.Filesystem.readFile({
+          path: this.fileName,
+          directory: 'DATA',
+          encoding: 'utf8'
+        });
+        const data = JSON.parse(result.data);
+        console.log('[Storage] Данные загружены из файла');
+        return data;
+      } catch (e) {
+        console.log('[Storage] Файл не найден, создаём новый');
+        return { sections: [], notes: [] };
+      }
+    } else {
+      try {
+        const raw = localStorage.getItem('notes_app_data');
+        return raw ? JSON.parse(raw) : { sections: [], notes: [] };
+      } catch (e) {
+        return { sections: [], notes: [] };
+      }
+    }
+  },
+
+  async save(data) {
+    if (this.isNative) {
+      try {
+        await this.Filesystem.writeFile({
+          path: this.fileName,
+          data: JSON.stringify(data, null, 2),
+          directory: 'DATA',
+          encoding: 'utf8',
+          recursive: true
+        });
+        console.log('[Storage] Данные сохранены в файл');
+      } catch (e) {
+        console.error('[Storage] Ошибка записи файла:', e);
+      }
+    } else {
+      try {
+        localStorage.setItem('notes_app_data', JSON.stringify(data));
+      } catch (e) {
+        console.error('[Storage] Ошибка localStorage:', e);
+      }
+    }
+  },
+
+  saveDebounced(data, delay = 300) {
+    if (this.saveTimeout) clearTimeout(this.saveTimeout);
+    this.saveTimeout = setTimeout(() => {
+      this.save(data);
+    }, delay);
+  }
+};
+// ============================================================
+
 
 const COLORS = ['#4169e1', '#7851a9', '#ca0147', '#3eb489', '#900020', '#ffd700', '#21421e', '#e97451'];
-const ICONS = ['⭐', '🔥', '', '✅', '❌', '', '🎯', '📚', '⏰', '❤️', '', '👉', '👍', '🦇', '🍀', ''];
+const ICONS = ['⭐', '🔥', '', '✅', '❌', '', '🎯', '📚', '', '❤️', '', '👉', '', '🦇', '🍀', ''];
 
 let currentSection = null;
 let editingIndex = -1;
@@ -250,30 +326,18 @@ function generateId() {
   return Date.now().toString(36) + Math.random().toString(36).substring(2, 10);
 }
 
-function persistSections() {
-  try { localStorage.setItem(STORAGE_SECTIONS, JSON.stringify(sectionsCache)); }
-  catch(e) { showToast('Ошибка сохранения', true); }
-}
-function persistNotes() {
-  try { localStorage.setItem(STORAGE_NOTES, JSON.stringify(notesCache)); }
-  catch(e) { showToast('Ошибка сохранения', true); }
-}
-function readSections() {
-  try { const d = localStorage.getItem(STORAGE_SECTIONS); return d ? JSON.parse(d) : []; }
-  catch(e) { return []; }
-}
-function readNotes() {
-  try { const d = localStorage.getItem(STORAGE_NOTES); return d ? JSON.parse(d) : []; }
-  catch(e) { return []; }
+function persistData() {
+  const data = { sections: sectionsCache, notes: notesCache };
+  Storage.saveDebounced(data);
 }
 
 function loadSections() {
-  const list = readSections();
+  const list = [...sectionsCache];
   list.sort((a, b) => (a.position || 0) - (b.position || 0));
   return list;
 }
 function loadNotes() {
-  const list = readNotes();
+  const list = [...notesCache];
   list.sort((a, b) => (a.position || 0) - (b.position || 0));
   return list;
 }
@@ -288,24 +352,24 @@ function insertSection(name, color) {
     created_at: new Date().toISOString()
   };
   sectionsCache.push(section);
-  persistSections();
+  persistData();
   return section;
 }
 function updateSection(id, name, color) {
   const idx = sectionsCache.findIndex(s => s.id === id);
   if (idx < 0) return null;
   sectionsCache[idx] = { ...sectionsCache[idx], name, color };
-  persistSections();
+  persistData();
   return sectionsCache[idx];
 }
 function updateSectionPosition(id, position) {
   const s = sectionsCache.find(x => x.id === id);
-  if (s) { s.position = position; persistSections(); }
+  if (s) { s.position = position; persistData(); }
   return true;
 }
 function deleteSection(id) {
   sectionsCache = sectionsCache.filter(s => s.id !== id);
-  persistSections();
+  persistData();
   return true;
 }
 
@@ -325,27 +389,26 @@ function insertNote(title, text, sid, color, icon) {
     updated_at: now
   };
   notesCache.unshift(note);
-  persistNotes();
+  persistData();
   return note;
 }
 function updateNote(id, title, text, color, icon) {
   const idx = notesCache.findIndex(n => n.id === id);
   if (idx < 0) return null;
   notesCache[idx] = { ...notesCache[idx], title, text, color, icon, updated_at: new Date().toISOString() };
-  persistNotes();
+  persistData();
   return notesCache[idx];
 }
 function updateNotePosition(id, position) {
   const n = notesCache.find(x => x.id === id);
-  if (n) { n.position = position; persistNotes(); }
+  if (n) { n.position = position; persistData(); }
   return true;
 }
 function deleteNote(id) {
   notesCache = notesCache.filter(n => n.id !== id);
-  persistNotes();
+  persistData();
   return true;
 }
-// ===== Конец блока локального хранилища =====
 
 function showToast(msg, err) { const t = document.getElementById('toast'); t.textContent = msg; t.className = 'toast show' + (err ? ' error' : ''); setTimeout(() => t.className = 'toast', 2500); }
 function lightenColor(hex, percent = 80) { hex = hex.replace('#', ''); const r = parseInt(hex.substring(0, 2), 16); const g = parseInt(hex.substring(2, 4), 16); const b = parseInt(hex.substring(4, 6), 16); const f = percent / 100; return '#' + Math.round(r + (255-r)*f).toString(16).padStart(2,'0') + Math.round(g + (255-g)*f).toString(16).padStart(2,'0') + Math.round(b + (255-b)*f).toString(16).padStart(2,'0'); }
@@ -353,7 +416,12 @@ function escapeHtml(t) { const d = document.createElement('div'); d.textContent 
 function stripHtml(h) { if (!h) return ''; const t = document.createElement('div'); t.innerHTML = h; return t.textContent||t.innerText||''; }
 function formatDate(n) { if (!n) return ''; const d = new Date(n.updated_at || n.created_at); return d.toLocaleDateString('ru-RU'); }
 
-function init() {
+async function init() {
+  await Storage.init();
+  const data = await Storage.load();
+  sectionsCache = data.sections || [];
+  notesCache = data.notes || [];
+  
   renderEditPalette();
   renderSectionPalette();
   renderIconPalette();
@@ -402,8 +470,6 @@ function showSections() {
   document.getElementById('editSectionBtn').style.display='none'; 
   document.getElementById('headerTitle').textContent='📝 Заметки'; 
   document.getElementById('addBtn').onclick=()=>openSectionModal(); 
-  sectionsCache=loadSections(); 
-  notesCache=loadNotes(); 
   renderSections(); 
   setupDragDrop('sectionsView', '.section-item', 'section');
 }
@@ -561,13 +627,13 @@ function setupDragDrop(containerId, itemSelector, type) {
         const s = sectionsCache.find(x => x.id === id);
         if (s) s.position = position;
       });
-      newOrder.forEach(({id, position}) => updateSectionPosition(id, position));
+      persistData();
     } else {
       newOrder.forEach(({id, position}) => {
         const n = notesCache.find(x => x.id === id);
         if (n) n.position = position;
       });
-      newOrder.forEach(({id, position}) => updateNotePosition(id, position));
+      persistData();
     }
     
     showToast('✓ Порядок сохранён');
@@ -590,14 +656,15 @@ function renderSections() {
   const c=document.getElementById('sectionsView'); 
   c.innerHTML=''; 
   if(sectionsCache.length===0){c.innerHTML='<p style="text-align:center;color:#bdc3c7;margin-top:40px;font-size:14px;">Нет разделов. Нажмите + чтобы создать первый!</p>';return;} 
-  sectionsCache.forEach(s=>{ 
+  const sorted = loadSections();
+  sorted.forEach(s=>{ 
     const cnt=notesCache.filter(n=>n.section_id===s.id).length; 
     const d=document.createElement('div'); 
     d.className='section-item'; 
     d.dataset.id = s.id;
     d.style.borderLeftColor=s.color; 
     d.style.background=lightenColor(s.color, 80); 
-    d.innerHTML=`<span class="name">${escapeHtml(s.name)}</span><span class="count">${cnt}</span><span class="drag-handle">⠿</span><button class="del-section" data-id="${s.id}" ${cnt>0?'disabled':''}></button>`; 
+    d.innerHTML=`<span class="name">${escapeHtml(s.name)}</span><span class="count">${cnt}</span><span class="drag-handle">⠿</span><button class="del-section" data-id="${s.id}" ${cnt>0?'disabled':''}>🗑️</button>`; 
     d.addEventListener('click', e=>{
       if (e.target.classList.contains('del-section') || e.target.classList.contains('drag-handle')) return;
       showNotes(s.name, s.id);
@@ -640,7 +707,7 @@ function renderNotes() {
 function processFormattedText(h) { 
   let r=/<[a-z][\s\S]*>/i.test(h)?h:escapeHtml(h); 
   r=r.replace(/(https?:\/\/[^\s<"]+)/g,'<a href="javascript:void(0)" class="link" data-url="$1">$1</a>'); 
-  r=r.replace(/(\+79\d{10})/g,'<span class="phone" data-phone="$1">$1</span>'); 
+  r=r.replace(/(\+7\s?\(?\d{3}\)?[\s-]?\d{3}[\s-]?\d{2}[\s-]?\d{2})(?!\d)/g,'<span class="phone" data-phone="$1">$1</span>'); 
   return r; 
 }
 
@@ -667,7 +734,7 @@ function viewNote(i,f) {
   document.getElementById('viewScreen').classList.add('active'); 
   setTimeout(()=>{ 
     document.querySelectorAll('#viewTextDisplay .link').forEach(el=>{el.onclick=e=>{e.preventDefault();e.stopPropagation();copyToClipboard(el.dataset.url);};}); 
-    document.querySelectorAll('#viewTextDisplay .phone').forEach(el=>{el.onclick=e=>{e.preventDefault();e.stopPropagation();copyToClipboard(el.dataset.phone);};}); 
+    document.querySelectorAll('#viewTextDisplay .phone').forEach(el=>{el.onclick=e=>{e.preventDefault();e.stopPropagation();copyToClipboard(el.dataset.phone.replace(/[^\d+]/g,''));};}); 
   },50); 
 }
 
