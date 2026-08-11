@@ -35,6 +35,25 @@ jobs:
       - name: Sync web assets
         run: npx cap sync android
 
+      - name: Set custom app icon
+        run: |
+          if [ -f icon.png ]; then
+            rm -rf android/app/src/main/res/mipmap-anydpi-v26
+            convert icon.png -resize 48x48   android/app/src/main/res/mipmap-mdpi/ic_launcher.png
+            convert icon.png -resize 72x72   android/app/src/main/res/mipmap-hdpi/ic_launcher.png
+            convert icon.png -resize 96x96   android/app/src/main/res/mipmap-xhdpi/ic_launcher.png
+            convert icon.png -resize 144x144 android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+            convert icon.png -resize 192x192 android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+            convert icon.png -resize 48x48   android/app/src/main/res/mipmap-mdpi/ic_launcher_round.png
+            convert icon.png -resize 72x72   android/app/src/main/res/mipmap-hdpi/ic_launcher_round.png
+            convert icon.png -resize 96x96   android/app/src/main/res/mipmap-xhdpi/ic_launcher_round.png
+            convert icon.png -resize 144x144 android/app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png
+            convert icon.png -resize 192x192 android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png
+            echo "Custom icon applied"
+          else
+            echo "icon.png not found - using default icon"
+          fi
+
       - name: Grant execute permission for gradlew
         run: chmod +x android/gradlew
 
