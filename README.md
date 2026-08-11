@@ -1,0 +1,2 @@
+# EvilNote
+ColorNote
