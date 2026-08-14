@@ -26,6 +26,9 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
+      - name: Prepare signing key
+        run: mkdir -p $HOME/.android; if [ -f app.keystore ]; then cp app.keystore $HOME/.android/debug.keystore; echo USING_REPO_KEY; else keytool -genkeypair -v -keystore $HOME/.android/debug.keystore -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 -storepass android -keypass android -dname "CN=Android, O=Android"; cp $HOME/.android/debug.keystore generated-key.keystore; echo GENERATED_NEW_KEY; fi
+
       - name: Install dependencies
         run: npm install
 
@@ -49,3 +52,10 @@ jobs:
         with:
           name: evilnote-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Upload signing key (save it once)
+        if: ${{ !hashFiles('app.keystore') }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: keystore-save-once
+          path: generated-key.keystore
