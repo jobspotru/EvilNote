@@ -465,25 +465,49 @@ async function doExport() {
 }
 
 function handleImportFile(input) {
-  const f = input.files && input.files[0];
-  if (!f) return;
-  const rd = new FileReader();
-  rd.onload = () => {
+  async function doExport() {
+  const data = { app: 'EvilNote', exported_at: new Date().toISOString(), sections: sectionsCache, notes: notesCache };
+  const name = backupFileName();
+  const json = JSON.stringify(data, null, 2);
+  if (!Storage.isNative) {
+    const blob = new Blob([json], { type: 'application/octet-stream' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    showToast('✓ Файл ' + name + ' скачан');
+    return;
+  }
+  try {
+    await Storage.Filesystem.writeFile({ path: name, data: json, directory: 'CACHE', encoding: 'utf8' });
+    const uri = await Storage.Filesystem.getUri({ path: name, directory: 'CACHE' });
+    const Share = window.Capacitor.Plugins.Share;
+    if (Share && Share.shareFiles) {
+      await Share.shareFiles({ files: [uri.uri], dialogTitle: 'Сохранить резервную копию' });
+      showToast('✓ Файл ' + name);
+      return;
+    }
+    throw new Error('нет плагина Share');
+  } catch (e1) {
     try {
-      const data = JSON.parse(rd.result);
-      if (!data || !Array.isArray(data.sections) || !Array.isArray(data.notes)) throw new Error('bad format');
-      showConfirm('Импортировать?', `Текущие данные будут ЗАМЕНЕНЫ содержимым файла "${f.name}" (${data.sections.length} разделов, ${data.notes.length} заметок).`, () => {
-        sectionsCache = data.sections;
-        notesCache = data.notes;
-        persistData();
-        closeAboutScreen();
-        showSections();
-        showToast('✓ Импортировано');
-      });
-    } catch (e) { showToast('Неверный формат файла', true); }
-    input.value = '';
-  };
-  rd.readAsText(f);
+      const file = new File([json], name, { type: 'application/octet-stream' });
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: 'EvilNote backup' });
+        showToast('✓ Файл ' + name);
+        return;
+      }
+      if (navigator.share) {
+        await navigator.share({ title: 'EvilNote', text: json });
+        showToast('✓ Отправлено текстом');
+        return;
+      }
+      throw new Error('нет share');
+    } catch (e2) {
+      showToast('Ошибка: ' + ((e1 && e1.message) ? e1.message : e1), true);
+    }
+  }
 }
 // ===== конец блока =====
 
