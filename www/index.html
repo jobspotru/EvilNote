@@ -297,7 +297,7 @@ function updateNote(id, title, text, color, icon) {
 }
 function deleteNote(id) { notesCache = notesCache.filter(n => n.id !== id); persistData(); return true; }
 
-function showToast(msg, err) { const t = document.getElementById('toast'); t.textContent = msg; t.className = 'toast show' + (err ? ' error' : ''); setTimeout(() => t.className = 'toast', 2500); }
+function showToast(msg, err) { const t = document.getElementById('toast'); t.textContent = msg; t.className = 'toast show' + (err ? ' error' : ''); setTimeout(() => t.className = 'toast', 8000); }
 function lightenColor(hex, percent = 80) { hex = hex.replace('#', ''); const r = parseInt(hex.substring(0, 2), 16); const g = parseInt(hex.substring(2, 4), 16); const b = parseInt(hex.substring(4, 6), 16); const f = percent / 100; return '#' + Math.round(r + (255-r)*f).toString(16).padStart(2,'0') + Math.round(g + (255-g)*f).toString(16).padStart(2,'0') + Math.round(b + (255-b)*f).toString(16).padStart(2,'0'); }
 function escapeHtml(t) { const d = document.createElement('div'); d.textContent = t||''; return d.innerHTML; }
 function stripHtml(h) { if (!h) return ''; const t = document.createElement('div'); t.innerHTML = h; return t.textContent||t.innerText||''; }
