@@ -176,7 +176,7 @@
       <button class="btn-export" id="exportBtn">📤 Экспорт</button>
       <button class="btn-import" id="importBtn">📥 Импорт</button>
     </div>
-    <input type="file" id="importFile" accept=".en,.json,application/json" style="display:none;">
+    <input type="file" id="importFile" accept=".en,.json,.txt,application/json,text/plain" style="display:none;">
   </div>
 </div>
 
@@ -337,33 +337,64 @@ async function doExport() {
   const data = { app: 'EvilNote', exported_at: new Date().toISOString(), sections: sectionsCache, notes: notesCache };
   const name = backupFileName();
   const json = JSON.stringify(data, null, 2);
+
   if (!Storage.isNative) {
-    const blob = new Blob([json], { type: 'application/octet-stream' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = name;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    downloadBlob(json, name);
     showToast('✓ Файл ' + name + ' скачан');
     return;
   }
+
+  let uriStr = null;
   try {
     await Storage.Filesystem.writeFile({ path: name, data: json, directory: 'CACHE', encoding: 'utf8' });
     const uri = await Storage.Filesystem.getUri({ path: name, directory: 'CACHE' });
-    if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Share && window.Capacitor.Plugins.Share.shareFiles) {
-      await window.Capacitor.Plugins.Share.shareFiles({ files: [uri.uri], dialogTitle: 'Сохранить резервную копию' });
+    uriStr = uri.uri;
+  } catch (e) {}
+
+  try {
+    const file = new File([json], name, { type: 'application/octet-stream' });
+    await navigator.share({ files: [file], title: 'EvilNote' });
+    showToast('✓ Файл ' + name);
+    return;
+  } catch (e) { if (e && e.name === 'AbortError') return; }
+
+  try {
+    const Share = window.Capacitor && window.Capacitor.Plugins ? window.Capacitor.Plugins.Share : null;
+    if (Share && Share.shareFiles && uriStr) {
+      await Share.shareFiles({ files: [uriStr], dialogTitle: 'Сохранить резервную копию' });
       showToast('✓ Файл ' + name);
-    } else if (navigator.share && navigator.canShare) {
-      const file = new File([json], name, { type: 'application/json' });
-      if (navigator.canShare({ files: [file] })) {
-        await navigator.share({ files: [file], title: 'EvilNote backup' });
-        showToast('✓ Файл ' + name);
-      } else { throw new Error('Файлы не поддерживаются'); }
-    } else { throw new Error('Нет способа поделиться'); }
-  } catch (e) {
-    showToast('Ошибка экспорта: ' + (e.message || 'неизвестно'), true);
-  }
+      return;
+    }
+    if (Share && Share.share) {
+      await Share.share({ title: 'EvilNote', text: json, dialogTitle: 'Сохранить резервную копию' });
+      showToast('✓ Отправлено текстом — сохрани как файл');
+      return;
+    }
+  } catch (e) { if (e && e.name === 'AbortError') return; }
+
+  try {
+    await navigator.share({ title: 'EvilNote', text: json });
+    showToast('✓ Отправлено текстом — сохрани как файл');
+    return;
+  } catch (e) { if (e && e.name === 'AbortError') return; }
+
+  try {
+    downloadBlob(json, name);
+    showToast('✓ Файл ' + name + ' скачан');
+    return;
+  } catch (e) {}
+
+  showToast('Ошибка экспорта: нет доступного способа', true);
+}
+
+function downloadBlob(json, name) {
+  const blob = new Blob([json], { type: 'application/octet-stream' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
 }
 
 function handleImportFile(input) {
