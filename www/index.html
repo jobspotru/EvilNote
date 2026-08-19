@@ -111,7 +111,7 @@
   <h1 id="headerTitle">📝 Заметки</h1>
   <div class="header-buttons">
     <button class="edit-section-btn" id="editSectionBtn" title="Редактировать раздел">✏️</button>
-    <button class="info-btn" id="aboutBtn" title="О программе">ⓘ</button>
+    <button class="info-btn" id="aboutBtn" title="About EvilNote">ⓘ</button>
     <button class="add-btn" id="addBtn" onclick="onAddClick()">+</button>
   </div>
 </header>
@@ -164,14 +164,21 @@
 <div class="fullscreen-screen" id="aboutScreen">
   <div class="screen-header">
     <button class="icon-btn" id="aboutBackBtn">‹</button>
-    <h2>О программе</h2>
+    <h2>About EvilNote</h2>
     <div style="width:36px; flex-shrink:0;"></div>
   </div>
   <div class="view-content" style="display:flex; flex-direction:column;">
     <img src="icon.png" style="width:96px; height:96px; border-radius:22px; display:block; margin:20px auto 12px; box-shadow:0 4px 12px rgba(0,0,0,.25); object-fit:cover;">
     <div class="about-name">EvilNote</div>
     <div class="about-version">Версия 1.0</div>
-    <div class="about-text" id="aboutText">Текст о программе появится здесь позже.</div>
+    <div class="about-text" id="aboutText">EvilNote — заметки, которые живут только на твоём телефоне.
+Больше их не видит никто.
+
+EvilNote — офлайн-блокнот без облака, рекламы и лишнего.
+Всё твоё остаётся твоим.
+
+evilelkru@gmail.com
+EvilElk © 2026</div>
     <div class="about-actions">
       <button class="btn-export" id="exportBtn">📤 Экспорт</button>
       <button class="btn-import" id="importBtn">📥 Импорт</button>
@@ -323,8 +330,22 @@ function bindAboutButtons() {
   document.getElementById('exportBtn').onclick = ()=>doExport();
   document.getElementById('importBtn').onclick = ()=>document.getElementById('importFile').click();
   document.getElementById('importFile').onchange = (e)=>handleImportFile(e.target);
+  
+  const aboutText = document.getElementById('aboutText');
+  aboutText.onclick = (e) => {
+    if (e.target.dataset.email) {
+      window.location.href = 'mailto:' + e.target.dataset.email;
+    }
+  };
 }
-function openAboutScreen(){ document.getElementById('aboutScreen').classList.add('active'); }
+function openAboutScreen(){
+  document.getElementById('aboutScreen').classList.add('active');
+  const aboutText = document.getElementById('aboutText');
+  aboutText.innerHTML = aboutText.innerHTML.replace(
+    'evilelkru@gmail.com',
+    '<span style="color:#2980b9;text-decoration:underline;cursor:pointer;" data-email="evilelkru@gmail.com">evilelkru@gmail.com</span>'
+  );
+}
 function closeAboutScreen(){ document.getElementById('aboutScreen').classList.remove('active'); }
 
 function backupFileName() {
