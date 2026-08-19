@@ -338,6 +338,15 @@ async function doExport() {
   const name = backupFileName();
   const json = JSON.stringify(data, null, 2);
 
+  try {
+    const FileSaver = window.Capacitor && window.Capacitor.Plugins ? window.Capacitor.Plugins.FileSaver : null;
+    if (FileSaver) {
+      await FileSaver.saveToDownloads({ name: name, content: json });
+      showToast('✓ Файл ' + name + ' в Загрузках');
+      return;
+    }
+  } catch (e) {}
+
   if (!Storage.isNative) {
     downloadBlob(json, name);
     showToast('✓ Файл ' + name + ' скачан');
