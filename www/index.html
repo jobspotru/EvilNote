@@ -338,14 +338,17 @@ async function doExport() {
   const name = backupFileName();
   const json = JSON.stringify(data, null, 2);
 
-  try {
-    const FileSaver = window.Capacitor && window.Capacitor.Plugins ? window.Capacitor.Plugins.FileSaver : null;
-    if (FileSaver) {
+  const FileSaver = window.Capacitor && window.Capacitor.Plugins ? window.Capacitor.Plugins.FileSaver : null;
+  if (FileSaver) {
+    try {
       await FileSaver.saveToDownloads({ name: name, content: json });
       showToast('✓ Файл ' + name + ' в Загрузках');
-      return;
+    } catch (e) {
+      showToast('FileSaver: ' + ((e && e.message) || JSON.stringify(e)), true);
     }
-  } catch (e) {}
+    return;
+  }
+  showToast('FileSaver не найден в APK — старый APK?', true);
 
   if (!Storage.isNative) {
     downloadBlob(json, name);
