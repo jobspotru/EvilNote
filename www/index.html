@@ -15,6 +15,8 @@
   .back-btn:active { background: rgba(255,255,255,0.35); }
   .edit-section-btn { background: rgba(255,255,255,0.15); color: #fff; border: none; border-radius: 50%; width: 36px; height: 36px; font-size: 16px; cursor: pointer; display: none; align-items: center; justify-content: center; flex-shrink: 0; }
   .edit-section-btn:active { background: rgba(255,255,255,0.3); }
+  .info-btn { background: rgba(255,255,255,0.2); color: #fff; border: none; border-radius: 50%; width: 36px; height: 36px; font-size: 20px; cursor: pointer; display: none; align-items: center; justify-content: center; flex-shrink: 0; line-height: 1; }
+  .info-btn:active { background: rgba(255,255,255,0.35); }
   
   #sectionsView { padding: 12px 16px; }
   .section-item { background: #fff; border-radius: 8px; padding: 10px 14px; margin-bottom: 8px; display: flex; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,.06); border-left: 4px solid; }
@@ -143,6 +145,14 @@
   .toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: #2c3e50; color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 13px; z-index: 100; opacity: 0; transition: opacity 0.3s; pointer-events: none; box-shadow: 0 4px 12px rgba(0,0,0,.15); }
   .toast.show { opacity: 1; }
   .toast.error { background: #c0392b; }
+  .about-logo { font-size: 64px; text-align: center; margin: 20px 0 8px; }
+  .about-name { text-align: center; font-size: 20px; font-weight: 700; color: #2c3e50; }
+  .about-version { text-align: center; font-size: 12px; color: #7f8c8d; margin-bottom: 16px; }
+  .about-text { font-size: 14px; line-height: 1.6; color: #333; background: #fff; border-radius: 8px; padding: 14px; box-shadow: 0 1px 3px rgba(0,0,0,.06); margin-bottom: 24px; white-space: pre-wrap; }
+  .about-actions { display: flex; gap: 10px; justify-content: center; margin-top: auto; padding-top: 10px; }
+  .about-actions button { flex: 1; max-width: 180px; padding: 12px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .btn-export { background: #27ae60; color: #fff; }
+  .btn-import { background: #2980b9; color: #fff; }
 </style>
 </head>
 <body>
@@ -152,6 +162,7 @@
   <h1 id="headerTitle">📝 Заметки</h1>
   <div class="header-buttons">
     <button class="edit-section-btn" id="editSectionBtn" title="Редактировать раздел">✏️</button>
+    <button class="info-btn" id="aboutBtn" title="О программе">ⓘ</button>
     <button class="add-btn" id="addBtn" onclick="onAddClick()">+</button>
   </div>
 </header>
@@ -201,6 +212,25 @@
   </div>
 </div>
 
+<div class="fullscreen-screen" id="aboutScreen">
+  <div class="screen-header">
+    <button class="icon-btn" id="aboutBackBtn">‹</button>
+    <h2>О программе</h2>
+    <div style="width:36px; flex-shrink:0;"></div>
+  </div>
+  <div class="view-content" style="display:flex; flex-direction:column;">
+    <div class="about-logo">🦌</div>
+    <div class="about-name">EvilNote</div>
+    <div class="about-version">Версия 1.0</div>
+    <div class="about-text" id="aboutText">Текст о программе появится здесь позже.</div>
+    <div class="about-actions">
+      <button class="btn-export" id="exportBtn">📤 Экспорт</button>
+      <button class="btn-import" id="importBtn">📥 Импорт</button>
+    </div>
+    <input type="file" id="importFile" accept=".en,.json,application/json" style="display:none;">
+  </div>
+</div>
+
 <div class="overlay" id="sectionOverlay">
   <div class="modal">
     <h2 id="sectionModalTitle">Новый раздел</h2>
@@ -230,8 +260,6 @@
 <script>
 // ============================================================
 //  МОДУЛЬ ХРАНЕНИЯ ДАННЫХ В ФАЙЛЕ
-//  Использует Capacitor Filesystem (для APK)
-//  или localStorage как fallback (для тестирования в браузере)
 // ============================================================
 const Storage = {
   fileName: 'notes_data.json',
@@ -243,26 +271,17 @@ const Storage = {
     if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Filesystem) {
       this.isNative = true;
       this.Filesystem = window.Capacitor.Plugins.Filesystem;
-      console.log('[Storage] Режим: Capacitor Filesystem (файл на устройстве)');
     } else {
       this.isNative = false;
-      console.log('[Storage] Режим: localStorage (браузер)');
     }
   },
 
   async load() {
     if (this.isNative) {
       try {
-        const result = await this.Filesystem.readFile({
-          path: this.fileName,
-          directory: 'DATA',
-          encoding: 'utf8'
-        });
-        const data = JSON.parse(result.data);
-        console.log('[Storage] Данные загружены из файла');
-        return data;
+        const result = await this.Filesystem.readFile({ path: this.fileName, directory: 'DATA', encoding: 'utf8' });
+        return JSON.parse(result.data);
       } catch (e) {
-        console.log('[Storage] Файл не найден, создаём новый');
         return { sections: [], notes: [] };
       }
     } else {
@@ -278,38 +297,23 @@ const Storage = {
   async save(data) {
     if (this.isNative) {
       try {
-        await this.Filesystem.writeFile({
-          path: this.fileName,
-          data: JSON.stringify(data, null, 2),
-          directory: 'DATA',
-          encoding: 'utf8',
-          recursive: true
-        });
-        console.log('[Storage] Данные сохранены в файл');
-      } catch (e) {
-        console.error('[Storage] Ошибка записи файла:', e);
-      }
+        await this.Filesystem.writeFile({ path: this.fileName, data: JSON.stringify(data, null, 2), directory: 'DATA', encoding: 'utf8', recursive: true });
+      } catch (e) { console.error('[Storage] Ошибка записи файла:', e); }
     } else {
-      try {
-        localStorage.setItem('notes_app_data', JSON.stringify(data));
-      } catch (e) {
-        console.error('[Storage] Ошибка localStorage:', e);
-      }
+      try { localStorage.setItem('notes_app_data', JSON.stringify(data)); } catch (e) { console.error('[Storage] Ошибка localStorage:', e); }
     }
   },
 
   saveDebounced(data, delay = 300) {
     if (this.saveTimeout) clearTimeout(this.saveTimeout);
-    this.saveTimeout = setTimeout(() => {
-      this.save(data);
-    }, delay);
+    this.saveTimeout = setTimeout(() => { this.save(data); }, delay);
   }
 };
 // ============================================================
 
 
 const COLORS = ['#4169e1', '#7851a9', '#ca0147', '#3eb489', '#900020', '#ffd700', '#21421e', '#e97451'];
-const ICONS = ['⭐', '🔥', '', '✅', '❌', '', '🎯', '📚', '', '❤️', '', '👉', '', '🦇', '🍀', ''];
+const ICONS = ['⭐', '🔥', '', '✅', '❌', '', '🎯', '📚', '', '❤️', '', '👉', '👍', '', '', ''];
 
 let currentSection = null;
 let editingIndex = -1;
@@ -344,13 +348,7 @@ function loadNotes() {
 
 function insertSection(name, color) {
   const maxPos = sectionsCache.length > 0 ? Math.max(...sectionsCache.map(s => s.position || 0)) : 0;
-  const section = {
-    id: generateId(),
-    name,
-    color,
-    position: maxPos + 1,
-    created_at: new Date().toISOString()
-  };
+  const section = { id: generateId(), name, color, position: maxPos + 1, created_at: new Date().toISOString() };
   sectionsCache.push(section);
   persistData();
   return section;
@@ -377,17 +375,7 @@ function insertNote(title, text, sid, color, icon) {
   const sectionNotes = notesCache.filter(n => n.section_id === sid);
   const maxPos = sectionNotes.length > 0 ? Math.max(...sectionNotes.map(n => n.position || 0)) : 0;
   const now = new Date().toISOString();
-  const note = {
-    id: generateId(),
-    title,
-    text,
-    section_id: sid,
-    color,
-    icon,
-    position: maxPos + 1,
-    created_at: now,
-    updated_at: now
-  };
+  const note = { id: generateId(), title, text, section_id: sid, color, icon, position: maxPos + 1, created_at: now, updated_at: now };
   notesCache.unshift(note);
   persistData();
   return note;
@@ -427,12 +415,77 @@ async function init() {
   renderIconPalette();
   bindViewButtons();
   bindFormatToolbar();
+  bindAboutButtons();
   showSections();
 }
 
 function bindViewButtons() { document.getElementById('viewBackBtn').onclick = ()=>closeViewScreen(); document.getElementById('viewEditBtn').onclick = ()=>editFromView(); document.getElementById('viewDeleteBtn').onclick = ()=>askDeleteFromView(); document.getElementById('viewCopyBtn').onclick = ()=>copyNoteContent(); document.getElementById('editSectionBtn').onclick = ()=>openEditSectionModal(); }
 function bindFormatToolbar() { const ed = document.getElementById('editText'); document.querySelectorAll('#formatToolbar button').forEach(b=>{ b.addEventListener('mousedown',e=>e.preventDefault()); b.addEventListener('click',e=>{e.preventDefault();document.execCommand(b.dataset.cmd,false,null);ed.focus();updateToolbarState();}); }); ['keyup','mouseup','touchend','click','focus','input'].forEach(e=>ed.addEventListener(e,()=>setTimeout(updateToolbarState,10))); }
 function updateToolbarState() { ['bold','italic','underline','strikeThrough'].forEach(c=>{ const b=document.querySelector(`#formatToolbar button[data-cmd="${c}"]`); if(b) try{b.classList.toggle('active',document.queryCommandState(c));}catch(e){} }); }
+
+// ===== Окно "О программе" + импорт/экспорт =====
+function bindAboutButtons() {
+  document.getElementById('aboutBtn').onclick = ()=>openAboutScreen();
+  document.getElementById('aboutBackBtn').onclick = ()=>closeAboutScreen();
+  document.getElementById('exportBtn').onclick = ()=>doExport();
+  document.getElementById('importBtn').onclick = ()=>document.getElementById('importFile').click();
+  document.getElementById('importFile').onchange = (e)=>handleImportFile(e.target);
+}
+function openAboutScreen(){ document.getElementById('aboutScreen').classList.add('active'); }
+function closeAboutScreen(){ document.getElementById('aboutScreen').classList.remove('active'); }
+
+function backupFileName() {
+  const d = new Date();
+  const p = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}${p(d.getHours())}${p(d.getMinutes())}.en`;
+}
+
+async function doExport() {
+  const data = { app: 'EvilNote', exported_at: new Date().toISOString(), sections: sectionsCache, notes: notesCache };
+  const name = backupFileName();
+  const json = JSON.stringify(data, null, 2);
+  if (Storage.isNative) {
+    try {
+      await Storage.Filesystem.writeFile({ path: name, data: json, directory: 'CACHE', encoding: 'utf8' });
+      const uri = await Storage.Filesystem.getUri({ path: name, directory: 'CACHE' });
+      const Share = window.Capacitor.Plugins.Share;
+      await Share.shareFiles({ files: [uri.uri], dialogTitle: 'Сохранить резервную копию' });
+      showToast('✓ Файл ' + name);
+    } catch (e) { showToast('Ошибка экспорта', true); }
+  } else {
+    const blob = new Blob([json], { type: 'application/octet-stream' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    showToast('✓ Файл ' + name + ' скачан');
+  }
+}
+
+function handleImportFile(input) {
+  const f = input.files && input.files[0];
+  if (!f) return;
+  const rd = new FileReader();
+  rd.onload = () => {
+    try {
+      const data = JSON.parse(rd.result);
+      if (!data || !Array.isArray(data.sections) || !Array.isArray(data.notes)) throw new Error('bad format');
+      showConfirm('Импортировать?', `Текущие данные будут ЗАМЕНЕНЫ содержимым файла "${f.name}" (${data.sections.length} разделов, ${data.notes.length} заметок).`, () => {
+        sectionsCache = data.sections;
+        notesCache = data.notes;
+        persistData();
+        closeAboutScreen();
+        showSections();
+        showToast('✓ Импортировано');
+      });
+    } catch (e) { showToast('Неверный формат файла', true); }
+    input.value = '';
+  };
+  rd.readAsText(f);
+}
+// ===== конец блока =====
 
 function renderEditPalette() { const p=document.getElementById('editPalette'); if(!p)return; p.innerHTML=''; COLORS.forEach(c=>{const s=document.createElement('span');s.style.background=c;if(c===selectedColor)s.classList.add('active');s.onclick=()=>{selectedColor=c;renderEditPalette();};p.appendChild(s);}); }
 function renderSectionPalette() { const p=document.getElementById('sectionPalette'); if(!p)return; p.innerHTML=''; COLORS.forEach(c=>{const s=document.createElement('span');s.style.background=c;if(c===selectedSectionColor)s.classList.add('active');s.onclick=()=>{selectedSectionColor=c;renderSectionPalette();};p.appendChild(s);}); }
@@ -468,6 +521,7 @@ function showSections() {
   document.getElementById('empty').style.display='none'; 
   document.getElementById('backBtn').style.display='none'; 
   document.getElementById('editSectionBtn').style.display='none'; 
+  document.getElementById('aboutBtn').style.display='flex'; 
   document.getElementById('headerTitle').textContent='📝 Заметки'; 
   document.getElementById('addBtn').onclick=()=>openSectionModal(); 
   renderSections(); 
@@ -479,6 +533,7 @@ function showNotes(name,id) {
   document.getElementById('notesView').style.display='block'; 
   document.getElementById('backBtn').style.display='flex'; 
   document.getElementById('editSectionBtn').style.display='flex'; 
+  document.getElementById('aboutBtn').style.display='none'; 
   document.getElementById('headerTitle').textContent=name; 
   document.getElementById('addBtn').onclick=()=>openEditScreen(); 
   renderNotes(); 
