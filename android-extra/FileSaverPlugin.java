@@ -26,7 +26,7 @@ public class FileSaverPlugin extends Plugin {
                 ContentValues values = new ContentValues();
                 values.put(MediaStore.Downloads.DISPLAY_NAME, name);
                 values.put(MediaStore.Downloads.MIME_TYPE, "application/octet-stream");
-                Uri uri = getContext().getContentResolver().insert(MediaStore.Downloads.CONTENT_URI, values);
+                Uri uri = getContext().getContentResolver().insert(Uri.parse("content://media/external/downloads"), values);
                 OutputStream os = getContext().getContentResolver().openOutputStream(uri);
                 os.write(content.getBytes("UTF-8"));
                 os.close();
