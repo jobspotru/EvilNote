@@ -176,7 +176,7 @@
       <button class="btn-export" id="exportBtn">📤 Экспорт</button>
       <button class="btn-import" id="importBtn">📥 Импорт</button>
     </div>
-    <input type="file" id="importFile" accept=".en,.json,.txt,application/json,text/plain" style="display:none;">
+    <input type="file" id="importFile" style="display:none;">
   </div>
 </div>
 
@@ -355,46 +355,6 @@ async function doExport() {
     showToast('✓ Файл ' + name + ' скачан');
     return;
   }
-
-  let uriStr = null;
-  try {
-    await Storage.Filesystem.writeFile({ path: name, data: json, directory: 'CACHE', encoding: 'utf8' });
-    const uri = await Storage.Filesystem.getUri({ path: name, directory: 'CACHE' });
-    uriStr = uri.uri;
-  } catch (e) {}
-
-  try {
-    const file = new File([json], name, { type: 'application/octet-stream' });
-    await navigator.share({ files: [file], title: 'EvilNote' });
-    showToast('✓ Файл ' + name);
-    return;
-  } catch (e) { if (e && e.name === 'AbortError') return; }
-
-  try {
-    const Share = window.Capacitor && window.Capacitor.Plugins ? window.Capacitor.Plugins.Share : null;
-    if (Share && Share.shareFiles && uriStr) {
-      await Share.shareFiles({ files: [uriStr], dialogTitle: 'Сохранить резервную копию' });
-      showToast('✓ Файл ' + name);
-      return;
-    }
-    if (Share && Share.share) {
-      await Share.share({ title: 'EvilNote', text: json, dialogTitle: 'Сохранить резервную копию' });
-      showToast('✓ Отправлено текстом — сохрани как файл');
-      return;
-    }
-  } catch (e) { if (e && e.name === 'AbortError') return; }
-
-  try {
-    await navigator.share({ title: 'EvilNote', text: json });
-    showToast('✓ Отправлено текстом — сохрани как файл');
-    return;
-  } catch (e) { if (e && e.name === 'AbortError') return; }
-
-  try {
-    downloadBlob(json, name);
-    showToast('✓ Файл ' + name + ' скачан');
-    return;
-  } catch (e) {}
 
   showToast('Ошибка экспорта: нет доступного способа', true);
 }
