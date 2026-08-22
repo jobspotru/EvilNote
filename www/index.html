@@ -286,7 +286,7 @@ let editingSectionId = null;
 function generateId() { return Date.now().toString(36) + Math.random().toString(36).substring(2, 10); }
 function persistData() { Storage.saveDebounced({ sections: sectionsCache, notes: notesCache }); }
 function loadSections() { const l = [...sectionsCache]; l.sort((a, b) => (a.position || 0) - (b.position || 0)); return l; }
-function loadNotes() { const l = [...notesCache]; l.sort((a, b) => (a.position || 0) - (b.position || 0)); return l; }
+function sectionNotes() { return notesCache.filter(n => n.section_id === currentSection.id).sort((a, b) => (a.position || 0) - (b.position || 0)); }
 
 function insertSection(name, color) {
   const maxPos = sectionsCache.length > 0 ? Math.max(...sectionsCache.map(s => s.position || 0)) : 0;
@@ -301,11 +301,11 @@ function updateSection(id, name, color) {
 function deleteSection(id) { sectionsCache = sectionsCache.filter(s => s.id !== id); persistData(); return true; }
 
 function insertNote(title, text, sid, color, icon) {
-  const sectionNotes = notesCache.filter(n => n.section_id === sid);
-  const maxPos = sectionNotes.length > 0 ? Math.max(...sectionNotes.map(n => n.position || 0)) : 0;
+  const sectionNotesList = notesCache.filter(n => n.section_id === sid);
+  const maxPos = sectionNotesList.length > 0 ? Math.max(...sectionNotesList.map(n => n.position || 0)) : 0;
   const now = new Date().toISOString();
   const note = { id: generateId(), title, text, section_id: sid, color, icon, position: maxPos + 1, created_at: now, updated_at: now };
-  notesCache.unshift(note); persistData(); return note;
+  notesCache.push(note); persistData(); return note;
 }
 function updateNote(id, title, text, color, icon) {
   const idx = notesCache.findIndex(n => n.id === id);
@@ -620,6 +620,8 @@ function setupDragDrop(containerId, itemSelector, type) {
       if (tp === 'section') { const s = sectionsCache.find(x => x.id === id); if (s) s.position = position; }
       else { const n = notesCache.find(x => x.id === id); if (n) n.position = position; }
     });
+    sectionsCache.sort((a, b) => (a.position || 0) - (b.position || 0));
+    notesCache.sort((a, b) => (a.position || 0) - (b.position || 0));
     persistData();
     showToast('✓ Порядок сохранён');
   }
@@ -667,7 +669,7 @@ function renderSections() {
 function renderNotes() {
   const l=document.getElementById('notesView'), e=document.getElementById('empty');
   l.innerHTML='';
-  const f=notesCache.filter(n=>n.section_id===currentSection.id);
+  const f=sectionNotes();
   e.style.display=f.length?'none':'block';
   f.forEach((n,i)=>{
     const d=document.createElement('div');
@@ -694,15 +696,15 @@ function processFormattedText(h) {
 }
 
 function copyToClipboard(t,l) { const ta=document.createElement('textarea'); ta.value=t; ta.style.cssText='position:fixed;left:-9999px;'; ta.setAttribute('readonly',''); document.body.appendChild(ta); ta.focus(); ta.select(); ta.setSelectionRange(0,t.length); try{document.execCommand('copy')?showToast('✓ Скопировано'+(l?': '+l:'')):showToast('Ошибка копирования',true);}catch(e){showToast('Ошибка',true);} document.body.removeChild(ta); }
-function copyNoteContent() { if(viewingIndex<0)return; const n=notesCache.filter(x=>x.section_id===currentSection.id)[viewingIndex]; copyToClipboard(stripHtml(n.text), 'текст заметки'); }
+function copyNoteContent() { if(viewingIndex<0)return; const n=sectionNotes()[viewingIndex]; copyToClipboard(stripHtml(n.text), 'текст заметки'); }
 function showConfirm(t,txt,cb) { document.getElementById('confirmTitle').textContent=t; document.getElementById('confirmText').textContent=txt; confirmCallback=cb; document.getElementById('confirmOverlay').classList.add('open'); document.getElementById('confirmBtn').onclick=()=>{if(confirmCallback)confirmCallback();closeConfirm();}; }
 function closeConfirm(){document.getElementById('confirmOverlay').classList.remove('open');confirmCallback=null;}
-function askDeleteFromView() { showConfirm('Удалить заметку?','Это действие нельзя отменить.',()=>{ if(viewingIndex<0)return; const n=notesCache.filter(x=>x.section_id===currentSection.id)[viewingIndex]; if(deleteNote(n.id)){closeViewScreen();renderNotes();} }); }
+function askDeleteFromView() { showConfirm('Удалить заметку?','Это действие нельзя отменить.',()=>{ if(viewingIndex<0)return; const n=sectionNotes()[viewingIndex]; if(deleteNote(n.id)){closeViewScreen();renderNotes();} }); }
 function openEditScreen() { editingIndex=-1; document.getElementById('editScreenTitle').textContent='Новая заметка'; document.getElementById('editTitle').value=''; document.getElementById('editText').innerHTML=''; selectedColor='#4169e1'; selectedIcon=''; syncColorButtons(); document.getElementById('noteColorPalette').classList.remove('open'); document.getElementById('editScreen').classList.add('active'); setTimeout(()=>document.querySelectorAll('#formatToolbar button').forEach(b=>b.classList.remove('active')),100); }
-function editFromView() { if(viewingIndex<0)return; const n=notesCache.filter(x=>x.section_id===currentSection.id)[viewingIndex]; editingIndex=viewingIndex; closeViewScreen(); document.getElementById('editScreenTitle').textContent='Редактировать'; document.getElementById('editTitle').value=n.title||''; document.getElementById('editText').innerHTML=n.text||''; selectedColor=n.color; selectedIcon=n.icon||''; syncColorButtons(); document.getElementById('noteColorPalette').classList.remove('open'); document.getElementById('editScreen').classList.add('active'); setTimeout(updateToolbarState,150); }
+function editFromView() { if(viewingIndex<0)return; const n=sectionNotes()[viewingIndex]; editingIndex=viewingIndex; closeViewScreen(); document.getElementById('editScreenTitle').textContent='Редактировать'; document.getElementById('editTitle').value=n.title||''; document.getElementById('editText').innerHTML=n.text||''; selectedColor=n.color; selectedIcon=n.icon||''; syncColorButtons(); document.getElementById('noteColorPalette').classList.remove('open'); document.getElementById('editScreen').classList.add('active'); setTimeout(updateToolbarState,150); }
 function closeEditScreen(){document.getElementById('editScreen').classList.remove('active');}
 
-function saveNoteFromScreen() { const t=document.getElementById('editTitle').value.trim(), h=document.getElementById('editText').innerHTML.trim(); if(!stripHtml(h).trim()){showToast('Введите текст');return;} if(!currentSection){showToast('Выберите раздел');return;} const f=notesCache.filter(n=>n.section_id===currentSection.id); if(editingIndex>=0){ const n=f[editingIndex]; const updated = updateNote(n.id,t,h,selectedColor,selectedIcon); if(updated){ const idx = notesCache.findIndex(x=>x.id===n.id); if(idx>=0) notesCache[idx] = updated; renderNotes(); } } else { const nn=insertNote(t,h,currentSection.id,selectedColor,selectedIcon); if(nn){renderNotes();} } closeEditScreen(); }
+function saveNoteFromScreen() { const t=document.getElementById('editTitle').value.trim(), h=document.getElementById('editText').innerHTML.trim(); if(!stripHtml(h).trim()){showToast('Введите текст');return;} if(!currentSection){showToast('Выберите раздел');return;} const f=sectionNotes(); if(editingIndex>=0){ const n=f[editingIndex]; const updated = updateNote(n.id,t,h,selectedColor,selectedIcon); if(updated){ const idx = notesCache.findIndex(x=>x.id===n.id); if(idx>=0) notesCache[idx] = updated; renderNotes(); } } else { const nn=insertNote(t,h,currentSection.id,selectedColor,selectedIcon); if(nn){renderNotes();} } closeEditScreen(); }
 
 function viewNote(i,f) {
   viewingIndex=i;
