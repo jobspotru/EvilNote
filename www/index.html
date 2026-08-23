@@ -115,7 +115,11 @@
   .toast.show { opacity: 1; }
   .toast.error { background: #c0392b; }
   .about-name { text-align: center; font-size: 20px; font-weight: 700; color: #2c3e50; }
-  .about-version { text-align: center; font-size: 12px; color: #7f8c8d; margin-bottom: 16px; }
+  .about-version { text-align: center; font-size: 12px; color: #7f8c8d; margin-bottom: 12px; }
+  .about-stats { display: flex; gap: 8px; margin-bottom: 16px; }
+  .about-stat { flex: 1; background: #fff; border-radius: 8px; padding: 10px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+  .about-stat .num { font-size: 22px; font-weight: 800; color: #F26A21; line-height: 1.2; }
+  .about-stat .lbl { font-size: 11px; color: #7f8c8d; margin-top: 2px; }
   .about-text { font-size: 14px; line-height: 1.6; color: #333; background: #fff; border-radius: 8px; padding: 14px; box-shadow: 0 1px 3px rgba(0,0,0,.06); margin-bottom: 24px; white-space: pre-wrap; }
   .about-logo-word { color: #F26A21; font-weight: 800; }
   .about-email { color: #2980b9; text-decoration: underline; cursor: pointer; font-weight: 600; }
@@ -201,6 +205,7 @@
     <img src="icon.png" style="width:96px; height:96px; border-radius:22px; display:block; margin:20px auto 12px; box-shadow:0 4px 12px rgba(0,0,0,.25); object-fit:cover;">
     <div class="about-name">EvilNote</div>
     <div class="about-version">Версия 1.0</div>
+    <div class="about-stats" id="aboutStats"></div>
     <div class="about-text" id="aboutText"><span class="about-logo-word">EvilNote</span> — заметки, которые живут только на твоём телефоне.
 Больше их не видит никто.
 
@@ -496,8 +501,20 @@ function bindFormatToolbar() {
 }
 function updateToolbarState() { ['bold','italic','underline','strikeThrough'].forEach(c=>{ const b=document.querySelector(`#formatToolbar button[data-cmd="${c}"]`); if(b) try{b.classList.toggle('active',document.queryCommandState(c));}catch(e){} }); }
 
+function renderAboutStats() {
+  const box = document.getElementById('aboutStats');
+  const totalNotes = notesCache.length;
+  const totalChecks = notesCache.filter(n => n.type === 'check').length;
+  let doneItems = 0, totalItems = 0;
+  notesCache.forEach(n => { if (n.type === 'check' && n.items) { totalItems += n.items.length; doneItems += n.items.filter(i => i.done).length; } });
+  box.innerHTML =
+    '<div class="about-stat"><div class="num">' + sectionsCache.length + '</div><div class="lbl">разделов</div></div>' +
+    '<div class="about-stat"><div class="num">' + totalNotes + '</div><div class="lbl">заметок</div></div>' +
+    '<div class="about-stat"><div class="num">' + doneItems + '/' + totalItems + '</div><div class="lbl">пунктов ✓</div></div>';
+}
+
 function bindAboutButtons() {
-  document.getElementById('aboutBtn').onclick = ()=>openAboutScreen();
+  document.getElementById('aboutBtn').onclick = ()=>{ renderAboutStats(); openAboutScreen(); };
   document.getElementById('aboutBackBtn').onclick = ()=>closeAboutScreen();
   document.getElementById('exportBtn').onclick = ()=>doExport();
   document.getElementById('importBtn').onclick = ()=>openImportPicker();
@@ -743,7 +760,7 @@ function renderSections() {
     const d=document.createElement('div');
     d.className='section-item';
     d.dataset.id = s.id;
-    const bg = lightenColor(s.color, 30);
+    const bg = lightenColor(s.color, 40);
     const dark = isDarkColor(bg);
     d.style.borderLeftColor = dark ? lightenColor(s.color, 55) : darkenColor(s.color, 45);
     d.style.background = bg;
@@ -775,7 +792,7 @@ function renderNotes() {
     const d=document.createElement('div');
     d.className='note';
     d.dataset.id = n.id;
-    const bg = lightenColor(n.color, 30);
+    const bg = lightenColor(n.color, 40);
     const dark = isDarkColor(bg);
     d.style.borderLeftColor = dark ? lightenColor(n.color, 55) : darkenColor(n.color, 45);
     d.style.background = bg;
