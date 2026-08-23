@@ -19,12 +19,16 @@
   .info-btn:active { background: rgba(255,255,255,0.35); }
   #sectionsView { padding: 12px 16px; }
   .section-item { background: #fff; border-radius: 8px; padding: 10px 14px; margin-bottom: 8px; display: flex; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,.06); border-left: 4px solid; }
-  .drag-handle { cursor: grab; padding: 8px 10px; color: #95a5a6; font-size: 20px; user-select: none; -webkit-user-select: none; touch-action: none; flex-shrink: 0; margin-left: 4px; margin-right: 4px; line-height: 1; }
-  .drag-handle:active { cursor: grabbing; color: #2c3e50; }
   .section-item .name { font-size: 14px; font-weight: 700; color: #2c3e50; flex: 1; }
   .section-item .count { background: rgba(0,0,0,0.08); color: #555; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; margin-right: 4px; min-width: 24px; text-align: center; }
   .section-item .del-section { background: none; border: none; color: #bdc3c7; font-size: 16px; cursor: pointer; padding: 4px; }
   .section-item .del-section:disabled { opacity: 0.3; cursor: not-allowed; }
+  .section-item.dark .name { color: #fff; }
+  .section-item.dark .count { background: rgba(255,255,255,.25); color: #fff; }
+  .section-item.dark .drag-handle { color: rgba(255,255,255,.7); }
+  .section-item.dark .del-section { color: rgba(255,255,255,.6); }
+  .drag-handle { cursor: grab; padding: 8px 10px; color: #95a5a6; font-size: 20px; user-select: none; -webkit-user-select: none; touch-action: none; flex-shrink: 0; margin-left: 4px; margin-right: 4px; line-height: 1; }
+  .drag-handle:active { cursor: grabbing; color: #2c3e50; }
   .section-item.dragging { opacity: 0.3; }
   #notesView { padding: 12px 16px; }
   .note { border-radius: 8px; padding: 12px 14px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,.08); border-left: 3px solid; }
@@ -35,6 +39,10 @@
   .note .title { font-size: 14px; font-weight: 600; margin-bottom: 4px; color: #000; display: flex; align-items: center; }
   .note .preview { font-size: 12px; color: #222; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.4; }
   .note .footer { font-size: 10px; color: #555; margin-top: 6px; opacity: 0.7; }
+  .note.dark .title { color: #fff; }
+  .note.dark .preview { color: #f0f0f0; }
+  .note.dark .footer { color: #ddd; }
+  .note.dark .drag-handle { color: rgba(255,255,255,.7); }
   .drag-clone { position: fixed; z-index: 9999; pointer-events: none; box-shadow: 0 8px 24px rgba(0,0,0,.3); border-radius: 8px; transform: scale(1.05); opacity: 0.95; }
   .fullscreen-screen { display: none; position: fixed; inset: 0; background: #f5f5f5; z-index: 20; flex-direction: column; }
   .fullscreen-screen.active { display: flex; }
@@ -51,8 +59,10 @@
   .view-text-display s, .view-text-display strike, .view-text-display del { text-decoration: line-through; }
   .view-text-display a, .view-text-display .phone { color: #2980b9; text-decoration: underline; cursor: pointer; font-weight: 600; }
   .view-date { font-size: 11px; color: #777; margin-top: 20px; padding-top: 10px; border-top: 1px solid #eee; }
+  .view-check-row { display: flex; gap: 10px; align-items: center; padding: 12px; border-radius: 8px; background: #fff; margin-bottom: 8px; box-shadow: 0 1px 3px rgba(0,0,0,.06); cursor: pointer; }
+  .view-check-text { font-size: 14px; color: #000; }
+  .view-check-text.done { text-decoration: line-through; color: #95a5a6; }
   .edit-content { flex: 1; padding: 16px; overflow-y: auto; padding-bottom: 100px; }
-  .edit-content label { display: block; margin-bottom: 6px; font-size: 12px; font-weight: 600; color: #7f8c8d; text-transform: uppercase; letter-spacing: 0.5px; }
   .edit-content input { width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 14px; margin-bottom: 12px; font-family: inherit; background: #fff; color: #000; }
   .edit-content input:focus { outline: none; border-color: #2c3e50; }
   .text-editor { width: 100%; min-height: 300px; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 14px; line-height: 1.6; font-family: inherit; background: #fff; color: #000; outline: none; overflow-y: auto; white-space: pre-wrap; word-wrap: break-word; margin-bottom: 12px; }
@@ -62,6 +72,16 @@
   .text-editor u { text-decoration: underline; }
   .text-editor s, .text-editor strike, .text-editor del { text-decoration: line-through; }
   .text-editor:empty::before { content: attr(data-placeholder); color: #aaa; pointer-events: none; }
+  .type-switch { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; }
+  .type-switch button { padding: 9px 12px; border: 1px solid #ddd; border-radius: 8px; background: #fafafa; font-size: 13px; font-weight: 600; color: #333; cursor: pointer; }
+  .type-switch button.active { background: #2c3e50; color: #fff; border-color: #2c3e50; }
+  .type-switch .color-btn { margin-left: auto; width: 40px; height: 38px; }
+  .check-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+  .check-row input { flex: 1; margin-bottom: 0; }
+  .check-box { width: 26px; height: 26px; border-radius: 6px; border: 2px solid #bdc3c7; background: #fff; display: flex; align-items: center; justify-content: center; font-size: 15px; color: #fff; cursor: pointer; flex-shrink: 0; }
+  .check-box.done { background: #27ae60; border-color: #27ae60; }
+  .check-del { background: none; border: none; color: #c0392b; font-size: 18px; cursor: pointer; padding: 4px; flex-shrink: 0; }
+  .add-item-btn { width: 100%; padding: 10px; border: 1px dashed #bdc3c7; background: #fafafa; border-radius: 8px; font-size: 13px; cursor: pointer; color: #2c3e50; font-weight: 600; }
   .format-toolbar { display: flex; gap: 6px; padding: 8px 10px; background: #fff; border: 1px solid #e0e0e0; border-radius: 8px; margin-bottom: 12px; flex-wrap: wrap; }
   .format-toolbar button { width: 44px; height: 38px; border: 1px solid #ddd; background: #fafafa; border-radius: 6px; cursor: pointer; font-size: 15px; font-weight: 700; display: flex; align-items: center; justify-content: center; color: #333; padding: 0; user-select: none; -webkit-user-select: none; }
   .format-toolbar button:active { background: #e9ecef; }
@@ -136,6 +156,7 @@
   <div class="view-content">
     <div class="view-title-display" id="viewTitleDisplay"></div>
     <div class="view-text-display" id="viewTextDisplay"></div>
+    <div id="viewCheckList" style="display:none;"></div>
     <div class="view-date" id="viewDateDisplay"></div>
   </div>
 </div>
@@ -147,18 +168,26 @@
     <button class="icon-btn" onclick="saveNoteFromScreen()" style="background:#27ae60;">✓</button>
   </div>
   <div class="edit-content">
-    <div class="format-toolbar" id="formatToolbar">
-      <button class="fmt-b" data-cmd="bold">B</button>
-      <button class="fmt-i" data-cmd="italic">I</button>
-      <button class="fmt-u" data-cmd="underline">U</button>
-      <button class="fmt-s" data-cmd="strikeThrough">S</button>
+    <div class="type-switch">
+      <button type="button" id="typeTextBtn" class="active">📝 Текст</button>
+      <button type="button" id="typeCheckBtn">☑️ Чек-лист</button>
       <button class="color-btn" id="noteColorBtn" type="button" title="Цвет заметки"></button>
     </div>
     <div class="color-palette" id="noteColorPalette"></div>
-    <label>Заголовок</label>
     <input type="text" id="editTitle" placeholder="Заголовок заметки">
-    <label>Текст</label>
-    <div class="text-editor" id="editText" contenteditable="true" data-placeholder="Текст заметки..."></div>
+    <div id="textFields">
+      <div class="format-toolbar" id="formatToolbar">
+        <button class="fmt-b" data-cmd="bold">B</button>
+        <button class="fmt-i" data-cmd="italic">I</button>
+        <button class="fmt-u" data-cmd="underline">U</button>
+        <button class="fmt-s" data-cmd="strikeThrough">S</button>
+      </div>
+      <div class="text-editor" id="editText" contenteditable="true" data-placeholder="Текст заметки..."></div>
+    </div>
+    <div id="checkFields" style="display:none;">
+      <div id="checkItems"></div>
+      <button class="add-item-btn" id="addItemBtn" type="button">+ Добавить пункт</button>
+    </div>
   </div>
 </div>
 
@@ -282,6 +311,8 @@ let confirmCallback = null;
 let sectionsCache = [];
 let notesCache = [];
 let editingSectionId = null;
+let editingType = 'text';
+let draftItems = [];
 
 function generateId() { return Date.now().toString(36) + Math.random().toString(36).substring(2, 10); }
 function persistData() { Storage.saveDebounced({ sections: sectionsCache, notes: notesCache }); }
@@ -300,25 +331,28 @@ function updateSection(id, name, color) {
 }
 function deleteSection(id) { sectionsCache = sectionsCache.filter(s => s.id !== id); persistData(); return true; }
 
-function insertNote(title, text, sid, color, icon) {
-  const sectionNotesList = notesCache.filter(n => n.section_id === sid);
-  const maxPos = sectionNotesList.length > 0 ? Math.max(...sectionNotesList.map(n => n.position || 0)) : 0;
+function insertNote(sid, data) {
+  const list = notesCache.filter(n => n.section_id === sid);
+  const maxPos = list.length > 0 ? Math.max(...list.map(n => n.position || 0)) : 0;
   const now = new Date().toISOString();
-  const note = { id: generateId(), title, text, section_id: sid, color, icon, position: maxPos + 1, created_at: now, updated_at: now };
+  const note = { id: generateId(), section_id: sid, position: maxPos + 1, created_at: now, updated_at: now, title: '', text: '', color: '#4169e1', icon: '', type: 'text', ...data };
   notesCache.push(note); persistData(); return note;
 }
-function updateNote(id, title, text, color, icon) {
+function updateNote(id, patch) {
   const idx = notesCache.findIndex(n => n.id === id);
   if (idx < 0) return null;
-  notesCache[idx] = { ...notesCache[idx], title, text, color, icon, updated_at: new Date().toISOString() }; persistData(); return notesCache[idx];
+  notesCache[idx] = { ...notesCache[idx], ...patch, updated_at: new Date().toISOString() }; persistData(); return notesCache[idx];
 }
 function deleteNote(id) { notesCache = notesCache.filter(n => n.id !== id); persistData(); return true; }
 
-function showToast(msg, err) { const t = document.getElementById('toast'); t.textContent = msg; t.className = 'toast show' + (err ? ' error' : ''); setTimeout(() => t.className = 'toast', 8000); }
-function lightenColor(hex, percent = 80) { hex = hex.replace('#', ''); const r = parseInt(hex.substring(0, 2), 16); const g = parseInt(hex.substring(2, 4), 16); const b = parseInt(hex.substring(4, 6), 16); const f = percent / 100; return '#' + Math.round(r + (255-r)*f).toString(16).padStart(2,'0') + Math.round(g + (255-g)*f).toString(16).padStart(2,'0') + Math.round(b + (255-b)*f).toString(16).padStart(2,'0'); }
+function showToast(msg, err) { const t = document.getElementById('toast'); t.textContent = msg; t.className = 'toast show' + (err ? ' error' : ''); setTimeout(() => t.className = 'toast', 2500); }
+function lightenColor(hex, percent = 20) { hex = hex.replace('#', ''); const r = parseInt(hex.substring(0, 2), 16); const g = parseInt(hex.substring(2, 4), 16); const b = parseInt(hex.substring(4, 6), 16); const f = percent / 100; return '#' + Math.round(r + (255-r)*f).toString(16).padStart(2,'0') + Math.round(g + (255-g)*f).toString(16).padStart(2,'0') + Math.round(b + (255-b)*f).toString(16).padStart(2,'0'); }
+function darkenColor(hex, percent = 45) { hex = hex.replace('#', ''); const r = parseInt(hex.substring(0, 2), 16); const g = parseInt(hex.substring(2, 4), 16); const b = parseInt(hex.substring(4, 6), 16); const f = percent / 100; return '#' + Math.round(r*(1-f)).toString(16).padStart(2,'0') + Math.round(g*(1-f)).toString(16).padStart(2,'0') + Math.round(b*(1-f)).toString(16).padStart(2,'0'); }
+function isDarkColor(hex) { hex = hex.replace('#', ''); const r = parseInt(hex.substring(0, 2), 16); const g = parseInt(hex.substring(2, 4), 16); const b = parseInt(hex.substring(4, 6), 16); return (0.299*r + 0.587*g + 0.114*b) / 255 < 0.6; }
 function escapeHtml(t) { const d = document.createElement('div'); d.textContent = t||''; return d.innerHTML; }
 function stripHtml(h) { if (!h) return ''; const t = document.createElement('div'); t.innerHTML = h; return t.textContent||t.innerText||''; }
 function formatDate(n) { if (!n) return ''; const d = new Date(n.updated_at || n.created_at); return d.toLocaleDateString('ru-RU'); }
+function checkStats(n) { const items = n.items || []; return { total: items.length, done: items.filter(i => i.done).length }; }
 
 function hslToHex(h, s, l) {
   s /= 100; l /= 100;
@@ -340,7 +374,7 @@ function buildColorPalette(container, onPick) {
       const b = document.createElement('button');
       b.type = 'button';
       b.className = 'tc-swatch';
-      b.style.background = hex;
+      b.style.background = lightenColor(hex, 20);
       b.dataset.color = hex;
       container.appendChild(b);
     });
@@ -350,7 +384,7 @@ function buildColorPalette(container, onPick) {
     const b = document.createElement('button');
     b.type = 'button';
     b.className = 'tc-swatch';
-    b.style.background = hex;
+    b.style.background = lightenColor(hex, 20);
     b.dataset.color = hex;
     container.appendChild(b);
   });
@@ -360,8 +394,66 @@ function buildColorPalette(container, onPick) {
 }
 
 function syncColorButtons() {
-  document.getElementById('noteColorBtn').style.background = selectedColor;
-  document.getElementById('sectionColorBtn').style.background = selectedSectionColor;
+  document.getElementById('noteColorBtn').style.background = lightenColor(selectedColor, 20);
+  document.getElementById('sectionColorBtn').style.background = lightenColor(selectedSectionColor, 20);
+}
+
+function setType(t) {
+  editingType = t;
+  document.getElementById('typeTextBtn').classList.toggle('active', t === 'text');
+  document.getElementById('typeCheckBtn').classList.toggle('active', t === 'check');
+  document.getElementById('textFields').style.display = t === 'text' ? 'block' : 'none';
+  document.getElementById('checkFields').style.display = t === 'check' ? 'block' : 'none';
+}
+
+function renderCheckEditor() {
+  const box = document.getElementById('checkItems');
+  box.innerHTML = '';
+  draftItems.forEach((it, idx) => {
+    const row = document.createElement('div');
+    row.className = 'check-row';
+    const cb = document.createElement('span');
+    cb.className = 'check-box' + (it.done ? ' done' : '');
+    cb.textContent = it.done ? '✓' : '';
+    cb.onclick = () => { it.done = !it.done; renderCheckEditor(); };
+    const inp = document.createElement('input');
+    inp.type = 'text';
+    inp.placeholder = 'Пункт ' + (idx + 1);
+    inp.value = it.text;
+    inp.oninput = () => { it.text = inp.value; };
+    const del = document.createElement('button');
+    del.type = 'button';
+    del.className = 'check-del';
+    del.textContent = '✕';
+    del.onclick = () => { draftItems.splice(idx, 1); renderCheckEditor(); };
+    row.appendChild(cb); row.appendChild(inp); row.appendChild(del);
+    box.appendChild(row);
+  });
+}
+
+function renderViewCheck(n) {
+  const list = document.getElementById('viewCheckList');
+  list.innerHTML = '';
+  (n.items || []).forEach(it => {
+    const row = document.createElement('div');
+    row.className = 'view-check-row';
+    const cb = document.createElement('span');
+    cb.className = 'check-box' + (it.done ? ' done' : '');
+    cb.textContent = it.done ? '✓' : '';
+    const tx = document.createElement('span');
+    tx.className = 'view-check-text' + (it.done ? ' done' : '');
+    tx.textContent = it.text;
+    row.appendChild(cb); row.appendChild(tx);
+    row.onclick = () => {
+      it.done = !it.done;
+      updateNote(n.id, { items: n.items });
+      renderViewCheck(n);
+      renderNotes();
+    };
+    list.appendChild(row);
+  });
+  const st = checkStats(n);
+  document.getElementById('viewHeaderTitle').textContent = (n.title || 'Чек-лист') + ' (' + st.done + '/' + st.total + ')';
 }
 
 async function init() {
@@ -369,8 +461,14 @@ async function init() {
   const data = await Storage.load();
   sectionsCache = data.sections || [];
   notesCache = data.notes || [];
-  bindViewButtons(); bindFormatToolbar(); bindColorButtons(); bindAboutButtons();
+  bindViewButtons(); bindFormatToolbar(); bindColorButtons(); bindTypeSwitch(); bindAboutButtons();
   showSections();
+}
+
+function bindTypeSwitch() {
+  document.getElementById('typeTextBtn').onclick = () => setType('text');
+  document.getElementById('typeCheckBtn').onclick = () => setType('check');
+  document.getElementById('addItemBtn').onclick = () => { draftItems.push({ id: generateId(), text: '', done: false }); renderCheckEditor(); };
 }
 
 function bindColorButtons() {
@@ -476,11 +574,10 @@ async function doExport() {
       await FileSaver.saveToDownloads({ name: name, content: json });
       showToast('✓ Файл ' + name + ' в Загрузках');
     } catch (e) {
-      showToast('FileSaver: ' + ((e && e.message) || JSON.stringify(e)), true);
+      showToast('Ошибка экспорта: ' + ((e && e.message) || 'неизвестно'), true);
     }
     return;
   }
-  showToast('FileSaver не найден в APK — старый APK?', true);
 
   if (!Storage.isNative) {
     downloadBlob(json, name);
@@ -646,8 +743,11 @@ function renderSections() {
     const d=document.createElement('div');
     d.className='section-item';
     d.dataset.id = s.id;
-    d.style.borderLeftColor=s.color;
-    d.style.background=lightenColor(s.color, 80);
+    const bg = lightenColor(s.color, 30);
+    const dark = isDarkColor(bg);
+    d.style.borderLeftColor = dark ? lightenColor(s.color, 55) : darkenColor(s.color, 45);
+    d.style.background = bg;
+    if (dark) d.classList.add('dark');
     d.innerHTML=`<span class="name">${escapeHtml(s.name)}</span><span class="count">${cnt}</span><span class="drag-handle">⠿</span><button class="del-section" data-id="${s.id}" ${cnt>0?'disabled':''}>🗑️</button>`;
     d.addEventListener('click', e=>{
       if (e.target.classList.contains('del-section') || e.target.classList.contains('drag-handle')) return;
@@ -675,11 +775,18 @@ function renderNotes() {
     const d=document.createElement('div');
     d.className='note';
     d.dataset.id = n.id;
-    d.style.borderLeftColor=n.color;
-    d.style.background=lightenColor(n.color, 80);
-    const iconHtml = n.icon ? `<span class="icon">${n.icon}</span>` : '';
-    const t=n.title||'Без заголовка', p=stripHtml(n.text);
-    d.innerHTML=`<div class="title">${iconHtml}${escapeHtml(t)}<span class="drag-handle">⠿</span></div><div class="preview">${escapeHtml(p.substring(0,80)+(p.length>80?'...':''))}</div><div class="footer">${formatDate(n)}</div>`;
+    const bg = lightenColor(n.color, 30);
+    const dark = isDarkColor(bg);
+    d.style.borderLeftColor = dark ? lightenColor(n.color, 55) : darkenColor(n.color, 45);
+    d.style.background = bg;
+    if (dark) d.classList.add('dark');
+    const isCheck = n.type === 'check';
+    const iconHtml = isCheck ? '<span class="icon">☑️</span>' : (n.icon ? `<span class="icon">${n.icon}</span>` : '');
+    const t=n.title|| (isCheck ? 'Чек-лист' : 'Без заголовка');
+    let p;
+    if (isCheck) { const st = checkStats(n); p = 'Выполнено ' + st.done + ' из ' + st.total; }
+    else { p = stripHtml(n.text); p = p.substring(0,80)+(p.length>80?'...':''); }
+    d.innerHTML=`<div class="title">${iconHtml}${escapeHtml(t)}<span class="drag-handle">⠿</span></div><div class="preview">${escapeHtml(p)}</div><div class="footer">${formatDate(n)}</div>`;
     d.addEventListener('click', (ev)=>{
       if (ev.target.classList.contains('drag-handle')) return;
       viewNote(i,f);
@@ -696,24 +803,93 @@ function processFormattedText(h) {
 }
 
 function copyToClipboard(t,l) { const ta=document.createElement('textarea'); ta.value=t; ta.style.cssText='position:fixed;left:-9999px;'; ta.setAttribute('readonly',''); document.body.appendChild(ta); ta.focus(); ta.select(); ta.setSelectionRange(0,t.length); try{document.execCommand('copy')?showToast('✓ Скопировано'+(l?': '+l:'')):showToast('Ошибка копирования',true);}catch(e){showToast('Ошибка',true);} document.body.removeChild(ta); }
-function copyNoteContent() { if(viewingIndex<0)return; const n=sectionNotes()[viewingIndex]; copyToClipboard(stripHtml(n.text), 'текст заметки'); }
+function copyNoteContent() {
+  if(viewingIndex<0)return;
+  const n=sectionNotes()[viewingIndex];
+  let txt;
+  if (n.type === 'check') txt = (n.items||[]).map(i => (i.done ? '[x] ' : '[ ] ') + i.text).join('\n');
+  else txt = stripHtml(n.text);
+  copyToClipboard(txt, 'текст заметки');
+}
 function showConfirm(t,txt,cb) { document.getElementById('confirmTitle').textContent=t; document.getElementById('confirmText').textContent=txt; confirmCallback=cb; document.getElementById('confirmOverlay').classList.add('open'); document.getElementById('confirmBtn').onclick=()=>{if(confirmCallback)confirmCallback();closeConfirm();}; }
 function closeConfirm(){document.getElementById('confirmOverlay').classList.remove('open');confirmCallback=null;}
 function askDeleteFromView() { showConfirm('Удалить заметку?','Это действие нельзя отменить.',()=>{ if(viewingIndex<0)return; const n=sectionNotes()[viewingIndex]; if(deleteNote(n.id)){closeViewScreen();renderNotes();} }); }
-function openEditScreen() { editingIndex=-1; document.getElementById('editScreenTitle').textContent='Новая заметка'; document.getElementById('editTitle').value=''; document.getElementById('editText').innerHTML=''; selectedColor='#4169e1'; selectedIcon=''; syncColorButtons(); document.getElementById('noteColorPalette').classList.remove('open'); document.getElementById('editScreen').classList.add('active'); setTimeout(()=>document.querySelectorAll('#formatToolbar button').forEach(b=>b.classList.remove('active')),100); }
-function editFromView() { if(viewingIndex<0)return; const n=sectionNotes()[viewingIndex]; editingIndex=viewingIndex; closeViewScreen(); document.getElementById('editScreenTitle').textContent='Редактировать'; document.getElementById('editTitle').value=n.title||''; document.getElementById('editText').innerHTML=n.text||''; selectedColor=n.color; selectedIcon=n.icon||''; syncColorButtons(); document.getElementById('noteColorPalette').classList.remove('open'); document.getElementById('editScreen').classList.add('active'); setTimeout(updateToolbarState,150); }
+
+function openEditScreen() {
+  editingIndex=-1;
+  document.getElementById('editScreenTitle').textContent='Новая заметка';
+  document.getElementById('editTitle').value='';
+  document.getElementById('editText').innerHTML='';
+  selectedColor='#4169e1'; selectedIcon='';
+  draftItems=[]; renderCheckEditor(); setType('text');
+  syncColorButtons();
+  document.getElementById('noteColorPalette').classList.remove('open');
+  document.getElementById('editScreen').classList.add('active');
+  setTimeout(()=>document.querySelectorAll('#formatToolbar button').forEach(b=>b.classList.remove('active')),100);
+}
+function editFromView() {
+  if(viewingIndex<0)return;
+  const n=sectionNotes()[viewingIndex];
+  editingIndex=viewingIndex;
+  closeViewScreen();
+  document.getElementById('editScreenTitle').textContent='Редактировать';
+  document.getElementById('editTitle').value=n.title||'';
+  selectedColor=n.color; selectedIcon=n.icon||'';
+  if (n.type === 'check') {
+    draftItems = (n.items||[]).map(it => ({ ...it }));
+    renderCheckEditor();
+    setType('check');
+  } else {
+    document.getElementById('editText').innerHTML=n.text||'';
+    draftItems=[]; renderCheckEditor();
+    setType('text');
+  }
+  syncColorButtons();
+  document.getElementById('noteColorPalette').classList.remove('open');
+  document.getElementById('editScreen').classList.add('active');
+  setTimeout(updateToolbarState,150);
+}
 function closeEditScreen(){document.getElementById('editScreen').classList.remove('active');}
 
-function saveNoteFromScreen() { const t=document.getElementById('editTitle').value.trim(), h=document.getElementById('editText').innerHTML.trim(); if(!stripHtml(h).trim()){showToast('Введите текст');return;} if(!currentSection){showToast('Выберите раздел');return;} const f=sectionNotes(); if(editingIndex>=0){ const n=f[editingIndex]; const updated = updateNote(n.id,t,h,selectedColor,selectedIcon); if(updated){ const idx = notesCache.findIndex(x=>x.id===n.id); if(idx>=0) notesCache[idx] = updated; renderNotes(); } } else { const nn=insertNote(t,h,currentSection.id,selectedColor,selectedIcon); if(nn){renderNotes();} } closeEditScreen(); }
+function saveNoteFromScreen() {
+  const t=document.getElementById('editTitle').value.trim();
+  if(!currentSection){showToast('Выберите раздел');return;}
+  const f=sectionNotes();
+  if (editingType === 'check') {
+    const items = draftItems.filter(it => it.text.trim() !== '');
+    if (items.length === 0) { showToast('Добавьте пункты'); return; }
+    if (editingIndex >= 0) {
+      const n=f[editingIndex];
+      updateNote(n.id, { title: t, type: 'check', items: items, color: selectedColor });
+    } else {
+      insertNote(currentSection.id, { title: t || 'Чек-лист', text: '', color: selectedColor, icon: '', type: 'check', items: items });
+    }
+  } else {
+    const h=document.getElementById('editText').innerHTML.trim();
+    if(!stripHtml(h).trim()){showToast('Введите текст');return;}
+    if (editingIndex >= 0) {
+      const n=f[editingIndex];
+      updateNote(n.id, { title: t, type: 'text', text: h, color: selectedColor, icon: selectedIcon });
+    } else {
+      insertNote(currentSection.id, { title: t, text: h, color: selectedColor, icon: selectedIcon, type: 'text' });
+    }
+  }
+  renderNotes();
+  closeEditScreen();
+}
 
 function viewNote(i,f) {
   viewingIndex=i;
   const n=f[i];
-  const iconHtml = n.icon ? n.icon + ' ' : '';
+  const isCheck = n.type === 'check';
+  const iconHtml = isCheck ? '☑️ ' : (n.icon ? n.icon + ' ' : '');
   document.getElementById('viewHeaderTitle').textContent = iconHtml + (n.title||'Заметка');
   document.getElementById('viewTitleDisplay').textContent = iconHtml + (n.title||'');
   document.getElementById('viewTitleDisplay').style.display=n.title?'block':'none';
-  document.getElementById('viewTextDisplay').innerHTML=processFormattedText(n.text);
+  document.getElementById('viewTextDisplay').style.display = isCheck ? 'none' : 'block';
+  document.getElementById('viewTextDisplay').innerHTML = isCheck ? '' : processFormattedText(n.text);
+  document.getElementById('viewCheckList').style.display = isCheck ? 'block' : 'none';
+  if (isCheck) renderViewCheck(n);
   document.getElementById('viewDateDisplay').textContent=formatDate(n);
   document.getElementById('viewScreen').classList.add('active');
   setTimeout(()=>{
