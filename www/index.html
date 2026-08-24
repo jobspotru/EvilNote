@@ -111,6 +111,16 @@
   .btn-save { background: #2c3e50; color: #fff; }
   .btn-cancel { background: #ecf0f1; color: #2c3e50; }
   .btn-danger { background: #c0392b; color: #fff; }
+  .pin-menu-btn { display: block; width: 100%; margin-bottom: 10px; padding: 12px; border: 1px solid #ddd; border-radius: 8px; background: #fafafa; font-size: 14px; font-weight: 600; color: #2c3e50; cursor: pointer; text-align: left; }
+  .pin-menu-btn:active { background: #e9ecef; }
+  .pin-menu-btn.danger { color: #c0392b; }
+  .lock-box { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; }
+  .lock-title { font-size: 20px; font-weight: 700; color: #2c3e50; margin: 14px 0 4px; }
+  .lock-sub { font-size: 13px; color: #7f8c8d; margin-bottom: 24px; text-align: center; }
+  .lock-input { width: 180px; text-align: center; font-size: 24px; letter-spacing: 8px; padding: 12px; border: 1px solid #e0e0e0; border-radius: 12px; background: #fff; outline: none; }
+  .lock-input:focus { border-color: #2c3e50; }
+  .lock-btn { margin-top: 16px; padding: 12px 44px; border: none; border-radius: 10px; background: #2c3e50; color: #fff; font-size: 15px; font-weight: 600; cursor: pointer; }
+  .lock-btn:active { background: #1a252f; }
   #empty { text-align: center; color: #bdc3c7; margin-top: 40px; font-size: 14px; padding: 20px; }
   .toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: #2c3e50; color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 13px; z-index: 100; opacity: 0; transition: opacity 0.3s; pointer-events: none; box-shadow: 0 4px 12px rgba(0,0,0,.15); }
   .toast.show { opacity: 1; }
@@ -126,6 +136,7 @@
   .about-email { color: #2980b9; text-decoration: underline; cursor: pointer; font-weight: 600; }
   .about-actions { display: flex; gap: 10px; justify-content: center; margin-top: auto; padding-top: 10px; }
   .about-actions button { flex: 1; max-width: 180px; padding: 12px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .about-actions .btn-pin { flex: 0 0 52px; max-width: none; padding: 12px 0; background: linear-gradient(180deg, #f6c445, #d9991b); color: #fff; font-size: 18px; box-shadow: 0 2px 6px rgba(217,153,27,.45); }
   .btn-export { background: #27ae60; color: #fff; }
   .btn-import { background: #2980b9; color: #fff; }
   .import-file-btn { display: block; width: 100%; margin-bottom: 8px; padding: 12px; border: 1px solid #ddd; border-radius: 8px; background: #fafafa; font-size: 13px; text-align: left; cursor: pointer; color: #2c3e50; font-weight: 600; }
@@ -218,6 +229,7 @@ EvilElk © 2026</div>
     <div class="about-actions">
       <button class="btn-export" id="exportBtn">📤 Экспорт</button>
       <button class="btn-import" id="importBtn">📥 Импорт</button>
+      <button class="btn-pin" id="pinBtn" title="PIN-код">🔢</button>
     </div>
     <input type="file" id="importFile" style="display:none;">
   </div>
@@ -249,6 +261,14 @@ EvilElk © 2026</div>
   </div>
 </div>
 
+<div class="overlay" id="pinOverlay">
+  <div class="modal">
+    <h2 id="pinModalTitle">🔢 PIN-код</h2>
+    <div id="pinModalBody"></div>
+    <div class="actions" id="pinModalActions"></div>
+  </div>
+</div>
+
 <div class="overlay" id="confirmOverlay">
   <div class="modal">
     <h2 id="confirmTitle">Подтверждение</h2>
@@ -259,6 +279,17 @@ EvilElk © 2026</div>
     </div>
   </div>
 </div>
+
+<div class="fullscreen-screen" id="lockScreen" style="z-index:50;">
+  <div class="lock-box">
+    <div style="font-size:56px;" class="v-icon">🔒</div>
+    <div class="lock-title">EvilNote защищён</div>
+    <div class="lock-sub">Введите PIN, чтобы открыть заметки</div>
+    <input type="password" class="lock-input" id="lockPinInput" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="••••">
+    <button class="lock-btn" id="lockUnlockBtn">Открыть</button>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -307,6 +338,24 @@ const Storage = {
   }
 };
 
+const PinStorage = {
+  fileName: 'pin_data.json',
+  async load() {
+    if (Storage.isNative) {
+      try { const r = await Storage.Filesystem.readFile({ path: this.fileName, directory: 'DATA', encoding: 'utf8' }); return JSON.parse(r.data); } catch (e) { return { pin: null }; }
+    } else {
+      try { const raw = localStorage.getItem('notes_app_pin'); return raw ? JSON.parse(raw) : { pin: null }; } catch (e) { return { pin: null }; }
+    }
+  },
+  async save(data) {
+    if (Storage.isNative) {
+      try { await Storage.Filesystem.writeFile({ path: this.fileName, data: JSON.stringify(data), directory: 'DATA', encoding: 'utf8', recursive: true }); } catch (e) {}
+    } else {
+      try { localStorage.setItem('notes_app_pin', JSON.stringify(data)); } catch (e) {}
+    }
+  }
+};
+
 let currentSection = null;
 let editingIndex = -1;
 let viewingIndex = -1;
@@ -319,6 +368,7 @@ let notesCache = [];
 let editingSectionId = null;
 let editingType = 'text';
 let draftItems = [];
+let pinHash = null;
 
 function generateId() { return Date.now().toString(36) + Math.random().toString(36).substring(2, 10); }
 function persistData() { Storage.saveDebounced({ sections: sectionsCache, notes: notesCache }); }
@@ -363,6 +413,12 @@ function leadingEmojiHtml(str) {
   const m = str.match(/^\p{Extended_Pictographic}\uFE0F?/u);
   if (!m) return escapeHtml(str);
   return '<span class="v-icon">' + m[0] + '</span>' + escapeHtml(str.slice(m[0].length));
+}
+function hashPin(str) {
+  const s = 'evilnote::' + str;
+  let h = 5381;
+  for (let i = 0; i < s.length; i++) { h = ((h << 5) + h + s.charCodeAt(i)) >>> 0; }
+  return h.toString(16);
 }
 
 function hslToHex(h, s, l) {
@@ -472,8 +528,12 @@ async function init() {
   const data = await Storage.load();
   sectionsCache = data.sections || [];
   notesCache = data.notes || [];
-  bindViewButtons(); bindFormatToolbar(); bindColorButtons(); bindTypeSwitch(); bindAboutButtons();
+  const pd = await PinStorage.load();
+  pinHash = pd && pd.pin ? pd.pin : null;
+  bindViewButtons(); bindFormatToolbar(); bindColorButtons(); bindTypeSwitch(); bindAboutButtons(); bindPinUi();
+  syncPinBtn();
   showSections();
+  if (pinHash) showLockScreen();
 }
 
 function bindTypeSwitch() {
@@ -519,7 +579,7 @@ function renderAboutStats() {
 }
 
 function bindAboutButtons() {
-  document.getElementById('aboutBtn').onclick = ()=>{ renderAboutStats(); openAboutScreen(); };
+  document.getElementById('aboutBtn').onclick = ()=>{ renderAboutStats(); syncPinBtn(); openAboutScreen(); };
   document.getElementById('aboutBackBtn').onclick = ()=>closeAboutScreen();
   document.getElementById('exportBtn').onclick = ()=>doExport();
   document.getElementById('importBtn').onclick = ()=>openImportPicker();
@@ -532,6 +592,100 @@ function bindAboutButtons() {
 function openAboutScreen(){ document.getElementById('aboutScreen').classList.add('active'); }
 function closeAboutScreen(){ document.getElementById('aboutScreen').classList.remove('active'); }
 function closeImportOverlay(){ document.getElementById('importOverlay').classList.remove('open'); }
+
+function bindPinUi() {
+  document.getElementById('pinBtn').onclick = () => openPinManager();
+  document.getElementById('lockUnlockBtn').onclick = () => tryUnlock();
+  document.getElementById('lockPinInput').addEventListener('keydown', e => { if (e.key === 'Enter') tryUnlock(); });
+}
+function syncPinBtn() {
+  document.getElementById('pinBtn').textContent = pinHash ? '🔒' : '🔢';
+}
+function showLockScreen() {
+  const inp = document.getElementById('lockPinInput');
+  inp.value = '';
+  document.getElementById('lockScreen').classList.add('active');
+  setTimeout(() => inp.focus(), 200);
+}
+function tryUnlock() {
+  const v = document.getElementById('lockPinInput').value.trim();
+  if (hashPin(v) === pinHash) {
+    document.getElementById('lockScreen').classList.remove('active');
+  } else {
+    showToast('Неверный PIN', true);
+    document.getElementById('lockPinInput').value = '';
+    document.getElementById('lockPinInput').focus();
+  }
+}
+
+function openPinManager() {
+  if (pinHash) renderPinCurrent(); else renderPinSetup(false);
+  document.getElementById('pinOverlay').classList.add('open');
+}
+function closePinModal() { document.getElementById('pinOverlay').classList.remove('open'); }
+function pinField(id, ph) {
+  return '<input type="password" id="' + id + '" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="' + ph + '" style="letter-spacing:4px; text-align:center; font-size:18px;">';
+}
+function bindPinEnter(id, fn) {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('keydown', e => { if (e.key === 'Enter') fn(); });
+}
+
+function renderPinSetup(isChange) {
+  document.getElementById('pinModalTitle').textContent = isChange ? '🔁 Смена PIN' : '🔢 Установка PIN';
+  document.getElementById('pinModalBody').innerHTML =
+    '<p style="font-size:13px; color:#7f8c8d; margin-bottom:12px;">Придумайте 4-значный PIN для входа в приложение.</p>' +
+    pinField('pinNew', 'Новый PIN') + pinField('pinConfirm', 'Повторите PIN');
+  document.getElementById('pinModalActions').innerHTML =
+    '<button class="btn-cancel" id="pinCancelBtn">Отмена</button><button class="btn-save" id="pinSaveBtn">Сохранить</button>';
+  document.getElementById('pinCancelBtn').onclick = closePinModal;
+  const save = () => {
+    const a = document.getElementById('pinNew').value.trim();
+    const b = document.getElementById('pinConfirm').value.trim();
+    if (!/^\d{4}$/.test(a)) { showToast('PIN — ровно 4 цифры', true); return; }
+    if (a !== b) { showToast('PIN не совпадает', true); return; }
+    pinHash = hashPin(a);
+    PinStorage.save({ pin: pinHash });
+    closePinModal(); syncPinBtn();
+    showToast(isChange ? '✓ PIN изменён' : '✓ PIN установлен');
+  };
+  document.getElementById('pinSaveBtn').onclick = save;
+  bindPinEnter('pinConfirm', save);
+}
+
+function renderPinCurrent() {
+  document.getElementById('pinModalTitle').textContent = '🔒 Введите текущий PIN';
+  document.getElementById('pinModalBody').innerHTML = pinField('pinCurrent', 'Текущий PIN');
+  document.getElementById('pinModalActions').innerHTML =
+    '<button class="btn-cancel" id="pinCancelBtn">Отмена</button><button class="btn-save" id="pinNextBtn">Далее</button>';
+  document.getElementById('pinCancelBtn').onclick = closePinModal;
+  const next = () => {
+    const v = document.getElementById('pinCurrent').value.trim();
+    if (hashPin(v) !== pinHash) { showToast('Неверный PIN', true); return; }
+    renderPinMenu();
+  };
+  document.getElementById('pinNextBtn').onclick = next;
+  bindPinEnter('pinCurrent', next);
+}
+
+function renderPinMenu() {
+  document.getElementById('pinModalTitle').textContent = '🔒 PIN установлен';
+  document.getElementById('pinModalBody').innerHTML =
+    '<button class="pin-menu-btn" id="pinChangeBtn">🔁 Сменить PIN</button>' +
+    '<button class="pin-menu-btn danger" id="pinRemoveBtn">🗑️ Снять PIN</button>';
+  document.getElementById('pinModalActions').innerHTML =
+    '<button class="btn-cancel" id="pinCancelBtn">Закрыть</button>';
+  document.getElementById('pinCancelBtn').onclick = closePinModal;
+  document.getElementById('pinChangeBtn').onclick = () => renderPinSetup(true);
+  document.getElementById('pinRemoveBtn').onclick = () => {
+    showConfirm('Снять PIN?', 'Заметки будут открываться без ввода PIN.', () => {
+      pinHash = null;
+      PinStorage.save({ pin: null });
+      closePinModal(); syncPinBtn();
+      showToast('✓ PIN снят');
+    });
+  };
+}
 
 async function openImportPicker() {
   const FileSaver = window.Capacitor && window.Capacitor.Plugins ? window.Capacitor.Plugins.FileSaver : null;
