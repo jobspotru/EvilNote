@@ -65,10 +65,9 @@
   .view-text-display a, .view-text-display .phone { color: #2980b9; text-decoration: underline; cursor: pointer; font-weight: 600; }
   .view-date { font-size: 11px; color: #777; margin-top: 20px; padding-top: 10px; border-top: 1px solid #eee; }
   .view-check-row { display: flex; gap: 10px; align-items: flex-start; padding: 12px; border-radius: 8px; background: #fff; margin-bottom: 8px; box-shadow: 0 1px 3px rgba(0,0,0,.06); cursor: pointer; }
-  .view-check-row .cb-wrap { padding-top: 2px; }
   .view-check-text { font-size: 14px; color: #000; }
   .view-check-text.done { text-decoration: line-through; color: #95a5a6; }
-  .edit-content { flex: 1; padding: 16px; overflow-y: auto; padding-bottom: 100px; }
+  .edit-content { flex: 1; padding: 16px; overflow-y: auto; padding-bottom: 60px; }
   .edit-content input { width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 14px; margin-bottom: 12px; font-family: inherit; background: #fff; color: #000; }
   .edit-content input:focus { outline: none; border-color: #2c3e50; }
   .text-editor { width: 100%; min-height: 300px; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 14px; line-height: 1.6; font-family: inherit; background: #fff; color: #000; outline: none; overflow-y: auto; white-space: pre-wrap; word-wrap: break-word; margin-bottom: 12px; }
@@ -78,24 +77,24 @@
   .text-editor u { text-decoration: underline; }
   .text-editor s, .text-editor strike, .text-editor del { text-decoration: line-through; }
   .text-editor:empty::before { content: attr(data-placeholder); color: #aaa; pointer-events: none; }
-  .type-switch { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; }
-  .type-switch button { padding: 9px 12px; border: 1px solid #ddd; border-radius: 8px; background: #fafafa; font-size: 13px; font-weight: 600; color: #333; cursor: pointer; }
-  .type-switch button.active { background: #2c3e50; color: #fff; border-color: #2c3e50; }
-  .type-switch .color-btn { margin-left: auto; width: 40px; height: 38px; }
-  .check-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
-  .check-row input { flex: 1; margin-bottom: 0; }
-  .check-box { width: 26px; height: 26px; border-radius: 6px; border: 2px solid #bdc3c7; background: #fff; display: flex; align-items: center; justify-content: center; font-size: 15px; color: #fff; cursor: pointer; flex-shrink: 0; }
-  .check-box.done { background: #27ae60; border-color: #27ae60; }
-  .check-del { background: none; border: none; color: #c0392b; font-size: 18px; cursor: pointer; padding: 4px; flex-shrink: 0; }
-  .add-item-btn { width: 100%; padding: 10px; border: 1px dashed #bdc3c7; background: #fafafa; border-radius: 8px; font-size: 13px; cursor: pointer; color: #2c3e50; font-weight: 600; }
-  .format-toolbar { display: flex; gap: 6px; padding: 8px 10px; background: #fff; border: 1px solid #e0e0e0; border-radius: 8px; margin-bottom: 12px; flex-wrap: wrap; }
-  .format-toolbar button { width: 44px; height: 38px; border: 1px solid #ddd; background: #fafafa; border-radius: 6px; cursor: pointer; font-size: 15px; font-weight: 700; display: flex; align-items: center; justify-content: center; color: #333; padding: 0; user-select: none; -webkit-user-select: none; }
+  .type-switch { display: flex; gap: 6px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
+  .type-switch .tbtn { padding: 8px 11px; border: 1px solid #ddd; border-radius: 8px; background: #fafafa; font-size: 16px; line-height: 1; color: #333; cursor: pointer; }
+  .type-switch .tbtn.active { background: #2c3e50; border-color: #2c3e50; }
+  .type-switch .color-btn { margin-left: auto; width: 38px; height: 36px; }
+  .format-toolbar { display: flex; gap: 4px; }
+  .format-toolbar button { width: 34px; height: 36px; border: 1px solid #ddd; background: #fafafa; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 700; display: flex; align-items: center; justify-content: center; color: #333; padding: 0; user-select: none; -webkit-user-select: none; }
   .format-toolbar button:active { background: #e9ecef; }
   .format-toolbar button.fmt-b { font-weight: 900; }
   .format-toolbar button.fmt-i { font-style: italic; font-weight: 400; }
   .format-toolbar button.fmt-u { text-decoration: underline; font-weight: 400; }
   .format-toolbar button.fmt-s { text-decoration: line-through; font-weight: 400; }
   .format-toolbar button.active { background: #2c3e50; color: #fff; border-color: #2c3e50; }
+  .check-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+  .check-row input { flex: 1; margin-bottom: 0; }
+  .check-box { width: 26px; height: 26px; border-radius: 6px; border: 2px solid #bdc3c7; background: #fff; display: flex; align-items: center; justify-content: center; font-size: 15px; color: #fff; cursor: pointer; flex-shrink: 0; }
+  .check-box.done { background: #27ae60; border-color: #27ae60; }
+  .check-del { background: none; border: none; color: #c0392b; font-size: 18px; cursor: pointer; padding: 4px; flex-shrink: 0; }
+  .add-item-btn { width: 100%; padding: 10px; border: 1px dashed #bdc3c7; background: #fafafa; border-radius: 8px; font-size: 13px; cursor: pointer; color: #2c3e50; font-weight: 600; }
   .color-btn { width: 44px; height: 40px; border-radius: 8px; border: 1px solid rgba(0,0,0,.25); cursor: pointer; flex-shrink: 0; padding: 0; box-shadow: inset 0 0 0 2px rgba(255,255,255,.6); }
   .color-palette { display: none; margin-bottom: 12px; background: #fff; border: 1px solid #e0e0e0; border-radius: 8px; padding: 8px; grid-template-columns: repeat(12, 1fr); gap: 4px; }
   .color-palette.open { display: grid; }
@@ -190,19 +189,19 @@
   </div>
   <div class="edit-content">
     <div class="type-switch">
-      <button type="button" id="typeTextBtn" class="active">📝 Текст</button>
-      <button type="button" id="typeCheckBtn">☑️ Чек-лист</button>
-      <button class="color-btn" id="noteColorBtn" type="button" title="Цвет заметки"></button>
-    </div>
-    <div class="color-palette" id="noteColorPalette"></div>
-    <input type="text" id="editTitle" placeholder="Заголовок заметки">
-    <div id="textFields">
+      <button type="button" id="typeTextBtn" class="tbtn active" title="Текст">📝</button>
+      <button type="button" id="typeCheckBtn" class="tbtn" title="Чек-лист">✅</button>
       <div class="format-toolbar" id="formatToolbar">
         <button class="fmt-b" data-cmd="bold">B</button>
         <button class="fmt-i" data-cmd="italic">I</button>
         <button class="fmt-u" data-cmd="underline">U</button>
         <button class="fmt-s" data-cmd="strikeThrough">S</button>
       </div>
+      <button class="color-btn" id="noteColorBtn" type="button" title="Цвет заметки"></button>
+    </div>
+    <div class="color-palette" id="noteColorPalette"></div>
+    <input type="text" id="editTitle" placeholder="Заголовок заметки">
+    <div id="textFields">
       <div class="text-editor" id="editText" contenteditable="true" data-placeholder="Текст заметки..."></div>
     </div>
     <div id="checkFields" style="display:none;">
@@ -476,6 +475,7 @@ function setType(t) {
   document.getElementById('typeCheckBtn').classList.toggle('active', t === 'check');
   document.getElementById('textFields').style.display = t === 'text' ? 'block' : 'none';
   document.getElementById('checkFields').style.display = t === 'check' ? 'block' : 'none';
+  document.getElementById('formatToolbar').style.display = t === 'text' ? 'flex' : 'none';
 }
 
 function renderCheckEditor() {
