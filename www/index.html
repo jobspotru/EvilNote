@@ -43,6 +43,10 @@
   .note.dark .preview { color: #f0f0f0; }
   .note.dark .footer { color: #ddd; }
   .note.dark .drag-handle { color: rgba(255,255,255,.7); }
+  .check-badge { display: inline-block; margin-left: 6px; padding: 2px 7px; border-radius: 10px; background: #27ae60; color: #fff; font-size: 9px; font-weight: 700; letter-spacing: .3px; vertical-align: middle; box-shadow: 0 0 4px rgba(39,174,96,.6); flex-shrink: 0; }
+  .stars-row { display: flex; margin-top: 6px; }
+  .star { font-size: 16px; line-height: 1; color: #c7cfd8; cursor: pointer; padding: 0 1px; user-select: none; -webkit-user-select: none; }
+  .star.on { color: #e6c229; filter: drop-shadow(0 0 1px rgba(255,255,255,.9)); }
   .v-icon { filter: drop-shadow(0 0 1px rgba(255,255,255,.95)) drop-shadow(0 0 4px rgba(255,255,255,.6)); }
   .drag-clone { position: fixed; z-index: 9999; pointer-events: none; box-shadow: 0 8px 24px rgba(0,0,0,.3); border-radius: 8px; transform: scale(1.05); opacity: 0.95; }
   .fullscreen-screen { display: none; position: fixed; inset: 0; background: #f5f5f5; z-index: 20; flex-direction: column; }
@@ -60,7 +64,8 @@
   .view-text-display s, .view-text-display strike, .view-text-display del { text-decoration: line-through; }
   .view-text-display a, .view-text-display .phone { color: #2980b9; text-decoration: underline; cursor: pointer; font-weight: 600; }
   .view-date { font-size: 11px; color: #777; margin-top: 20px; padding-top: 10px; border-top: 1px solid #eee; }
-  .view-check-row { display: flex; gap: 10px; align-items: center; padding: 12px; border-radius: 8px; background: #fff; margin-bottom: 8px; box-shadow: 0 1px 3px rgba(0,0,0,.06); cursor: pointer; }
+  .view-check-row { display: flex; gap: 10px; align-items: flex-start; padding: 12px; border-radius: 8px; background: #fff; margin-bottom: 8px; box-shadow: 0 1px 3px rgba(0,0,0,.06); cursor: pointer; }
+  .view-check-row .cb-wrap { padding-top: 2px; }
   .view-check-text { font-size: 14px; color: #000; }
   .view-check-text.done { text-decoration: line-through; color: #95a5a6; }
   .edit-content { flex: 1; padding: 16px; overflow-y: auto; padding-bottom: 100px; }
@@ -482,7 +487,7 @@ function renderCheckEditor() {
     const cb = document.createElement('span');
     cb.className = 'check-box' + (it.done ? ' done' : '');
     cb.textContent = it.done ? '✓' : '';
-    cb.onclick = () => { it.done = !it.done; renderCheckEditor(); };
+    cb.onclick = () => { it.done = !it.done; if (!it.done) it.rating = 0; renderCheckEditor(); };
     const inp = document.createElement('input');
     inp.type = 'text';
     inp.placeholder = 'Пункт ' + (idx + 1);
@@ -507,12 +512,33 @@ function renderViewCheck(n) {
     const cb = document.createElement('span');
     cb.className = 'check-box' + (it.done ? ' done' : '');
     cb.textContent = it.done ? '✓' : '';
-    const tx = document.createElement('span');
+    const wrap = document.createElement('div');
+    wrap.style.flex = '1';
+    const tx = document.createElement('div');
     tx.className = 'view-check-text' + (it.done ? ' done' : '');
     tx.textContent = it.text;
-    row.appendChild(cb); row.appendChild(tx);
+    wrap.appendChild(tx);
+    const sr = document.createElement('div');
+    sr.className = 'stars-row';
+    const r = it.rating || 0;
+    for (let i = 1; i <= 10; i++) {
+      const s = document.createElement('span');
+      s.className = 'star' + (i <= r ? ' on' : '');
+      s.textContent = '★';
+      s.onclick = (e) => {
+        e.stopPropagation();
+        it.rating = (it.rating === i) ? i - 1 : i;
+        updateNote(n.id, { items: n.items });
+        renderViewCheck(n);
+        renderNotes();
+      };
+      sr.appendChild(s);
+    }
+    wrap.appendChild(sr);
+    row.appendChild(cb); row.appendChild(wrap);
     row.onclick = () => {
       it.done = !it.done;
+      if (!it.done) it.rating = 0;
       updateNote(n.id, { items: n.items });
       renderViewCheck(n);
       renderNotes();
@@ -520,7 +546,7 @@ function renderViewCheck(n) {
     list.appendChild(row);
   });
   const st = checkStats(n);
-  document.getElementById('viewHeaderTitle').innerHTML = '<span class="v-icon">☑️</span> ' + escapeHtml(n.title || 'Чек-лист') + ' (' + st.done + '/' + st.total + ')';
+  document.getElementById('viewHeaderTitle').innerHTML = leadingEmojiHtml(n.title || 'Чек-лист') + '<span class="check-badge">чек-лист</span> (' + st.done + '/' + st.total + ')';
 }
 
 async function init() {
@@ -539,7 +565,7 @@ async function init() {
 function bindTypeSwitch() {
   document.getElementById('typeTextBtn').onclick = () => setType('text');
   document.getElementById('typeCheckBtn').onclick = () => setType('check');
-  document.getElementById('addItemBtn').onclick = () => { draftItems.push({ id: generateId(), text: '', done: false }); renderCheckEditor(); };
+  document.getElementById('addItemBtn').onclick = () => { draftItems.push({ id: generateId(), text: '', done: false, rating: 0 }); renderCheckEditor(); };
 }
 
 function bindColorButtons() {
@@ -957,12 +983,13 @@ function renderNotes() {
     d.style.background = bg;
     if (dark) d.classList.add('dark');
     const isCheck = n.type === 'check';
-    const iconHtml = isCheck ? '<span class="icon">☑️</span>' : (n.icon ? `<span class="icon">${n.icon}</span>` : '');
+    const iconHtml = isCheck ? '' : (n.icon ? `<span class="icon">${n.icon}</span>` : '');
+    const badge = isCheck ? '<span class="check-badge">чек-лист</span>' : '';
     const t=n.title|| (isCheck ? 'Чек-лист' : 'Без заголовка');
     let p;
     if (isCheck) { const st = checkStats(n); p = 'Выполнено ' + st.done + ' из ' + st.total; }
     else { p = stripHtml(n.text); p = p.substring(0,80)+(p.length>80?'...':''); }
-    d.innerHTML=`<div class="title">${iconHtml}${leadingEmojiHtml(t)}<span class="drag-handle">⠿</span></div><div class="preview">${leadingEmojiHtml(p)}</div><div class="footer">${formatDate(n)}</div>`;
+    d.innerHTML=`<div class="title">${iconHtml}${leadingEmojiHtml(t)}${badge}<span class="drag-handle">⠿</span></div><div class="preview">${leadingEmojiHtml(p)}</div><div class="footer">${formatDate(n)}</div>`;
     d.addEventListener('click', (ev)=>{
       if (ev.target.classList.contains('drag-handle')) return;
       viewNote(i,f);
@@ -983,7 +1010,7 @@ function copyNoteContent() {
   if(viewingIndex<0)return;
   const n=sectionNotes()[viewingIndex];
   let txt;
-  if (n.type === 'check') txt = (n.items||[]).map(i => (i.done ? '[x] ' : '[ ] ') + i.text).join('\n');
+  if (n.type === 'check') txt = (n.items||[]).map(i => (i.done ? '[x] ' : '[ ] ') + i.text + ((i.rating||0) > 0 ? ' (' + i.rating + '/10)' : '')).join('\n');
   else txt = stripHtml(n.text);
   copyToClipboard(txt, 'текст заметки');
 }
@@ -1058,8 +1085,9 @@ function viewNote(i,f) {
   viewingIndex=i;
   const n=f[i];
   const isCheck = n.type === 'check';
-  const iconHtml = isCheck ? '<span class="v-icon">☑️</span> ' : (n.icon ? `<span class="v-icon">${n.icon}</span> ` : '');
-  const titleHtml = iconHtml + leadingEmojiHtml(n.title||'Заметка');
+  const iconHtml = isCheck ? '' : (n.icon ? `<span class="v-icon">${n.icon}</span> ` : '');
+  const badge = isCheck ? '<span class="check-badge">чек-лист</span>' : '';
+  const titleHtml = iconHtml + leadingEmojiHtml(n.title||'Заметка') + badge;
   document.getElementById('viewHeaderTitle').innerHTML = titleHtml;
   document.getElementById('viewTitleDisplay').innerHTML = titleHtml;
   document.getElementById('viewTitleDisplay').style.display=n.title?'block':'none';
