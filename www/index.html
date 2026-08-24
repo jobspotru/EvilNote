@@ -35,7 +35,7 @@
   .note .drag-handle { cursor: grab; padding: 6px 8px; color: #95a5a6; font-size: 18px; user-select: none; -webkit-user-select: none; touch-action: none; flex-shrink: 0; margin-left: auto; line-height: 1; }
   .note .drag-handle:active { cursor: grabbing; color: #2c3e50; }
   .note.dragging { opacity: 0.3; }
-  .note .icon { font-size: 18px; margin-right: 8px; flex-shrink: 0; }
+  .note .icon { font-size: 18px; margin-right: 8px; flex-shrink: 0; filter: drop-shadow(0 0 1px #fff) drop-shadow(0 0 3px #fff) drop-shadow(0 0 6px rgba(255,255,255,.85)); }
   .note .title { font-size: 14px; font-weight: 600; margin-bottom: 4px; color: #000; display: flex; align-items: center; }
   .note .preview { font-size: 12px; color: #222; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.4; }
   .note .footer { font-size: 10px; color: #555; margin-top: 6px; opacity: 0.7; }
@@ -43,6 +43,7 @@
   .note.dark .preview { color: #f0f0f0; }
   .note.dark .footer { color: #ddd; }
   .note.dark .drag-handle { color: rgba(255,255,255,.7); }
+  .v-icon { filter: drop-shadow(0 0 1px #fff) drop-shadow(0 0 3px #fff) drop-shadow(0 0 6px rgba(255,255,255,.85)); }
   .drag-clone { position: fixed; z-index: 9999; pointer-events: none; box-shadow: 0 8px 24px rgba(0,0,0,.3); border-radius: 8px; transform: scale(1.05); opacity: 0.95; }
   .fullscreen-screen { display: none; position: fixed; inset: 0; background: #f5f5f5; z-index: 20; flex-direction: column; }
   .fullscreen-screen.active { display: flex; }
@@ -353,11 +354,16 @@ function deleteNote(id) { notesCache = notesCache.filter(n => n.id !== id); pers
 function showToast(msg, err) { const t = document.getElementById('toast'); t.textContent = msg; t.className = 'toast show' + (err ? ' error' : ''); setTimeout(() => t.className = 'toast', 2500); }
 function lightenColor(hex, percent = 20) { hex = hex.replace('#', ''); const r = parseInt(hex.substring(0, 2), 16); const g = parseInt(hex.substring(2, 4), 16); const b = parseInt(hex.substring(4, 6), 16); const f = percent / 100; return '#' + Math.round(r + (255-r)*f).toString(16).padStart(2,'0') + Math.round(g + (255-g)*f).toString(16).padStart(2,'0') + Math.round(b + (255-b)*f).toString(16).padStart(2,'0'); }
 function darkenColor(hex, percent = 45) { hex = hex.replace('#', ''); const r = parseInt(hex.substring(0, 2), 16); const g = parseInt(hex.substring(2, 4), 16); const b = parseInt(hex.substring(4, 6), 16); const f = percent / 100; return '#' + Math.round(r*(1-f)).toString(16).padStart(2,'0') + Math.round(g*(1-f)).toString(16).padStart(2,'0') + Math.round(b*(1-f)).toString(16).padStart(2,'0'); }
-function isDarkColor(hex) { hex = hex.replace('#', ''); const r = parseInt(hex.substring(0, 2), 16); const g = parseInt(hex.substring(2, 4), 16); const b = parseInt(hex.substring(4, 6), 16); return (0.299*r + 0.587*g + 0.114*b) / 255 < 0.6; }
+function isDarkColor(hex) { hex = hex.replace('#', ''); const r = parseInt(hex.substring(0, 2), 16); const g = parseInt(hex.substring(2, 4), 16); const b = parseInt(hex.substring(4, 6), 16); return (0.299*r + 0.587*g + 0.114*b) / 255 < 0.72; }
 function escapeHtml(t) { const d = document.createElement('div'); d.textContent = t||''; return d.innerHTML; }
 function stripHtml(h) { if (!h) return ''; const t = document.createElement('div'); t.innerHTML = h; return t.textContent||t.innerText||''; }
 function formatDate(n) { if (!n) return ''; const d = new Date(n.updated_at || n.created_at); return d.toLocaleDateString('ru-RU'); }
 function checkStats(n) { const items = n.items || []; return { total: items.length, done: items.filter(i => i.done).length }; }
+function leadingEmojiHtml(str) {
+  const m = str.match(/^\p{Extended_Pictographic}\uFE0F?/u);
+  if (!m) return escapeHtml(str);
+  return '<span class="v-icon">' + m[0] + '</span>' + escapeHtml(str.slice(m[0].length));
+}
 
 function hslToHex(h, s, l) {
   s /= 100; l /= 100;
@@ -458,7 +464,7 @@ function renderViewCheck(n) {
     list.appendChild(row);
   });
   const st = checkStats(n);
-  document.getElementById('viewHeaderTitle').textContent = (n.title || 'Чек-лист') + ' (' + st.done + '/' + st.total + ')';
+  document.getElementById('viewHeaderTitle').innerHTML = '<span class="v-icon">☑️</span> ' + escapeHtml(n.title || 'Чек-лист') + ' (' + st.done + '/' + st.total + ')';
 }
 
 async function init() {
@@ -504,7 +510,6 @@ function updateToolbarState() { ['bold','italic','underline','strikeThrough'].fo
 function renderAboutStats() {
   const box = document.getElementById('aboutStats');
   const totalNotes = notesCache.length;
-  const totalChecks = notesCache.filter(n => n.type === 'check').length;
   let doneItems = 0, totalItems = 0;
   notesCache.forEach(n => { if (n.type === 'check' && n.items) { totalItems += n.items.length; doneItems += n.items.filter(i => i.done).length; } });
   box.innerHTML =
@@ -631,7 +636,7 @@ function showSections() {
   document.getElementById('backBtn').style.display='none';
   document.getElementById('editSectionBtn').style.display='none';
   document.getElementById('aboutBtn').style.display='flex';
-  document.getElementById('headerTitle').textContent='📝 Заметки';
+  document.getElementById('headerTitle').innerHTML = leadingEmojiHtml('📝 Заметки');
   document.getElementById('addBtn').onclick=()=>openSectionModal();
   renderSections();
   setupDragDrop('sectionsView', '.section-item', 'section');
@@ -643,7 +648,7 @@ function showNotes(name,id) {
   document.getElementById('backBtn').style.display='flex';
   document.getElementById('editSectionBtn').style.display='flex';
   document.getElementById('aboutBtn').style.display='none';
-  document.getElementById('headerTitle').textContent=name;
+  document.getElementById('headerTitle').innerHTML = leadingEmojiHtml(name);
   document.getElementById('addBtn').onclick=()=>openEditScreen();
   renderNotes();
   setupDragDrop('notesView', '.note', 'note');
@@ -652,7 +657,7 @@ function onAddClick(){}
 
 function openSectionModal() { editingSectionId = null; document.getElementById('sectionModalTitle').textContent = 'Новый раздел'; document.getElementById('sectionSaveBtn').textContent = 'Создать'; document.getElementById('sectionName').value=''; selectedSectionColor = '#4169e1'; syncColorButtons(); document.getElementById('sectionColorPalette').classList.remove('open'); document.getElementById('sectionOverlay').classList.add('open'); }
 function openEditSectionModal() { if (!currentSection) return; editingSectionId = currentSection.id; document.getElementById('sectionModalTitle').textContent = 'Редактировать раздел'; document.getElementById('sectionSaveBtn').textContent = 'Сохранить'; document.getElementById('sectionName').value = currentSection.name; const section = sectionsCache.find(s => s.id === currentSection.id); selectedSectionColor = section ? section.color : '#4169e1'; syncColorButtons(); document.getElementById('sectionColorPalette').classList.remove('open'); document.getElementById('sectionOverlay').classList.add('open'); }
-function onSectionSave() { const name = document.getElementById('sectionName').value.trim(); if (!name) { showToast('Введите название'); return; } const duplicate = sectionsCache.some(s => s.name === name && s.id !== editingSectionId); if (duplicate) { showToast('Раздел с таким именем уже существует'); return; } if (editingSectionId) { const updated = updateSection(editingSectionId, name, selectedSectionColor); if (updated) { const idx = sectionsCache.findIndex(s => s.id === editingSectionId); if (idx >= 0) sectionsCache[idx] = updated; currentSection = { name: updated.name, id: updated.id }; document.getElementById('headerTitle').textContent = updated.name; renderSections(); renderNotes(); closeSectionModal(); showToast('✓ Раздел обновлён'); } } else { const ns = insertSection(name, selectedSectionColor); if (ns) { renderSections(); closeSectionModal(); } } }
+function onSectionSave() { const name = document.getElementById('sectionName').value.trim(); if (!name) { showToast('Введите название'); return; } const duplicate = sectionsCache.some(s => s.name === name && s.id !== editingSectionId); if (duplicate) { showToast('Раздел с таким именем уже существует'); return; } if (editingSectionId) { const updated = updateSection(editingSectionId, name, selectedSectionColor); if (updated) { const idx = sectionsCache.findIndex(s => s.id === editingSectionId); if (idx >= 0) sectionsCache[idx] = updated; currentSection = { name: updated.name, id: updated.id }; document.getElementById('headerTitle').innerHTML = leadingEmojiHtml(updated.name); renderSections(); renderNotes(); closeSectionModal(); showToast('✓ Раздел обновлён'); } } else { const ns = insertSection(name, selectedSectionColor); if (ns) { renderSections(); closeSectionModal(); } } }
 function closeSectionModal(){ document.getElementById('sectionOverlay').classList.remove('open'); editingSectionId = null; }
 
 function setupDragDrop(containerId, itemSelector, type) {
@@ -760,12 +765,12 @@ function renderSections() {
     const d=document.createElement('div');
     d.className='section-item';
     d.dataset.id = s.id;
-    const bg = lightenColor(s.color, 40);
+    const bg = lightenColor(s.color, 60);
     const dark = isDarkColor(bg);
     d.style.borderLeftColor = dark ? lightenColor(s.color, 55) : darkenColor(s.color, 45);
     d.style.background = bg;
     if (dark) d.classList.add('dark');
-    d.innerHTML=`<span class="name">${escapeHtml(s.name)}</span><span class="count">${cnt}</span><span class="drag-handle">⠿</span><button class="del-section" data-id="${s.id}" ${cnt>0?'disabled':''}>🗑️</button>`;
+    d.innerHTML=`<span class="name">${leadingEmojiHtml(s.name)}</span><span class="count">${cnt}</span><span class="drag-handle">⠿</span><button class="del-section" data-id="${s.id}" ${cnt>0?'disabled':''}>🗑️</button>`;
     d.addEventListener('click', e=>{
       if (e.target.classList.contains('del-section') || e.target.classList.contains('drag-handle')) return;
       showNotes(s.name, s.id);
@@ -792,7 +797,7 @@ function renderNotes() {
     const d=document.createElement('div');
     d.className='note';
     d.dataset.id = n.id;
-    const bg = lightenColor(n.color, 40);
+    const bg = lightenColor(n.color, 60);
     const dark = isDarkColor(bg);
     d.style.borderLeftColor = dark ? lightenColor(n.color, 55) : darkenColor(n.color, 45);
     d.style.background = bg;
@@ -803,7 +808,7 @@ function renderNotes() {
     let p;
     if (isCheck) { const st = checkStats(n); p = 'Выполнено ' + st.done + ' из ' + st.total; }
     else { p = stripHtml(n.text); p = p.substring(0,80)+(p.length>80?'...':''); }
-    d.innerHTML=`<div class="title">${iconHtml}${escapeHtml(t)}<span class="drag-handle">⠿</span></div><div class="preview">${escapeHtml(p)}</div><div class="footer">${formatDate(n)}</div>`;
+    d.innerHTML=`<div class="title">${iconHtml}${leadingEmojiHtml(t)}<span class="drag-handle">⠿</span></div><div class="preview">${leadingEmojiHtml(p)}</div><div class="footer">${formatDate(n)}</div>`;
     d.addEventListener('click', (ev)=>{
       if (ev.target.classList.contains('drag-handle')) return;
       viewNote(i,f);
@@ -899,9 +904,10 @@ function viewNote(i,f) {
   viewingIndex=i;
   const n=f[i];
   const isCheck = n.type === 'check';
-  const iconHtml = isCheck ? '☑️ ' : (n.icon ? n.icon + ' ' : '');
-  document.getElementById('viewHeaderTitle').textContent = iconHtml + (n.title||'Заметка');
-  document.getElementById('viewTitleDisplay').textContent = iconHtml + (n.title||'');
+  const iconHtml = isCheck ? '<span class="v-icon">☑️</span> ' : (n.icon ? `<span class="v-icon">${n.icon}</span> ` : '');
+  const titleHtml = iconHtml + leadingEmojiHtml(n.title||'Заметка');
+  document.getElementById('viewHeaderTitle').innerHTML = titleHtml;
+  document.getElementById('viewTitleDisplay').innerHTML = titleHtml;
   document.getElementById('viewTitleDisplay').style.display=n.title?'block':'none';
   document.getElementById('viewTextDisplay').style.display = isCheck ? 'none' : 'block';
   document.getElementById('viewTextDisplay').innerHTML = isCheck ? '' : processFormattedText(n.text);
